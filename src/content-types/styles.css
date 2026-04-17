@@ -29,3 +29,14 @@
 .wpct-list__content {
 	padding: 20px;
 }
+
+/* Name link in table */
+.wpct-list__name-link {
+	color: #3858e9;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.wpct-list__name-link:hover {
+	text-decoration: underline;
+}

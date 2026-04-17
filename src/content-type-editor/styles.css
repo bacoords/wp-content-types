@@ -1,14 +1,12 @@
 /**
  * Content Type Editor Styles
- *
- * Custom layout using WordPress components.
  */
 
 /* Full-screen editor layout */
 .wpct-editor {
 	position: fixed;
-	top: 32px; /* Admin bar */
-	left: 160px; /* Admin menu */
+	top: 32px;
+	left: 160px;
 	right: 0;
 	bottom: 0;
 	display: flex;
@@ -16,12 +14,10 @@
 	background: #fff;
 }
 
-/* Collapsed admin menu */
 .folded .wpct-editor {
 	left: 36px;
 }
 
-/* Mobile adjustments */
 @media screen and (max-width: 782px) {
 	.wpct-editor {
 		top: 46px;
@@ -29,7 +25,6 @@
 	}
 }
 
-/* Loading and empty states */
 .wpct-editor--loading,
 .wpct-editor--empty {
 	display: flex;
@@ -45,35 +40,14 @@
 	padding: 0 16px;
 	height: 60px;
 	border-bottom: 1px solid #ddd;
-	background: #fff;
 	flex-shrink: 0;
 }
 
-/* Breadcrumb navigation */
 .wpct-editor__breadcrumb {
 	display: flex;
 	align-items: center;
 	gap: 4px;
 	margin: 0;
-	font-size: 14px;
-}
-
-.wpct-editor__breadcrumb-link {
-	color: #3858e9;
-	text-decoration: none;
-}
-
-.wpct-editor__breadcrumb-link:hover {
-	text-decoration: underline;
-}
-
-.wpct-editor__breadcrumb-separator {
-	fill: #757575;
-}
-
-.wpct-editor__breadcrumb-current {
-	font-weight: 600;
-	color: #1e1e1e;
 }
 
 .wpct-editor__header-actions {
@@ -82,12 +56,7 @@
 	gap: 12px;
 }
 
-.wpct-editor__unsaved {
-	font-size: 12px;
-	color: #cc1818;
-}
-
-/* Body - content + sidebar */
+/* Body */
 .wpct-editor__body {
 	display: flex;
 	flex: 1;
@@ -97,50 +66,62 @@
 /* Content area */
 .wpct-editor__content {
 	flex: 1;
-	overflow-y: auto;
-	background: #f0f0f0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
 }
 
 .wpct-editor__content-inner {
-	max-width: 800px;
-	margin: 0 auto;
-	padding: 24px;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
 }
 
-.wpct-editor__content .components-panel {
-	background: #fff;
-	border: 1px solid #ddd;
-	border-radius: 2px;
+.wpct-editor__tab-content {
+	padding: 24px;
+	flex: 1;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.wpct-editor__tab-content .components-card {
+	width: 100%;
+	max-width: 600px;
+	margin-bottom: 16px;
+}
+
+.wpct-editor__tab-content .components-card:last-child {
+	margin-bottom: 0;
 }
 
 /* Sidebar */
 .wpct-editor__sidebar {
 	width: 280px;
+	padding: 16px;
 	border-left: 1px solid #ddd;
-	background: #fff;
 	overflow-y: auto;
 	flex-shrink: 0;
 }
 
-.wpct-editor__sidebar .components-panel {
+.wpct-editor__sidebar .components-card {
 	border: 0;
-	border-radius: 0;
+	box-shadow: none;
 }
 
-.wpct-editor__sidebar-info {
-	color: #757575;
-	font-size: 13px;
-	margin: 0;
+/* Supports checkboxes grid */
+.wpct-supports-checkboxes {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px 24px;
 }
 
-/* Placeholder text */
-.wpct-editor__placeholder {
-	color: #757575;
-	font-style: italic;
-	margin-bottom: 16px;
+.wpct-supports-checkboxes .components-checkbox-control {
+	margin-bottom: 0;
 }
 
-/* Responsive: stack on mobile */
+/* Responsive */
 @media screen and (max-width: 782px) {
 	.wpct-editor__body {
 		flex-direction: column;
@@ -151,5 +132,9 @@
 		border-left: 0;
 		border-top: 1px solid #ddd;
 		max-height: 300px;
+	}
+
+	.wpct-supports-checkboxes {
+		grid-template-columns: 1fr;
 	}
 }

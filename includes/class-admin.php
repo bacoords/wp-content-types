@@ -22,6 +22,7 @@ class WPCT_Admin {
 	 */
 	private static function add_menu() {
 		// Main Content Types page (list view).
+		// Position 79 places it just above Settings (80).
 		add_menu_page(
 			__( 'Content Types', 'wp-content-types' ),
 			__( 'Content Types', 'wp-content-types' ),
@@ -29,7 +30,7 @@ class WPCT_Admin {
 			'wp-content-types',
 			array( __CLASS__, 'render_content_types_page' ),
 			'dashicons-database',
-			30
+			79
 		);
 
 		// Edit Content Type subpage.
@@ -41,6 +42,38 @@ class WPCT_Admin {
 			'wp-content-type-edit',
 			array( __CLASS__, 'render_content_type_editor_page' )
 		);
+
+		// Add "Manage" submenu to each registered user content type.
+		self::add_manage_submenus();
+	}
+
+	/**
+	 * Add "Manage" submenu items under each registered content type's menu.
+	 */
+	private static function add_manage_submenus() {
+		global $submenu;
+
+		$content_types = WPCT_Content_Type::get_all();
+
+		foreach ( $content_types as $content_type ) {
+			$slug = $content_type['slug'] ?? '';
+			$id   = $content_type['id'] ?? 0;
+
+			// Only add if the post type exists and is registered.
+			if ( empty( $slug ) || ! post_type_exists( $slug ) ) {
+				continue;
+			}
+
+			$parent_slug = 'edit.php?post_type=' . $slug;
+			$manage_url  = admin_url( 'admin.php?page=wp-content-type-edit&id=' . $id );
+
+			// Directly add to submenu array for external URL linking.
+			$submenu[ $parent_slug ][] = array(
+				__( 'Manage', 'wp-content-types' ),
+				'manage_options',
+				$manage_url,
+			);
+		}
 	}
 
 	/**
