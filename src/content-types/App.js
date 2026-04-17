@@ -17,6 +17,10 @@ function getEditUrl( id ) {
 	return `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ id }`;
 }
 
+function getManageUrl( slug ) {
+	return `${ window.wpctSettings.adminUrl }edit.php?post_type=${ slug }`;
+}
+
 const fields = [
 	{
 		id: 'name',
@@ -25,7 +29,7 @@ const fields = [
 		render: ( { item } ) => {
 			const title = item.title?.rendered || item.title;
 			return (
-				<a href={ getEditUrl( item.id ) }>
+				<a href={ getEditUrl( item.id ) } style={ { fontWeight: 600 } }>
 					{ title }
 				</a>
 			);
@@ -59,6 +63,14 @@ const actions = [
 		callback: ( items ) => {
 			const item = items[ 0 ];
 			window.location.href = getEditUrl( item.id );
+		},
+	},
+	{
+		id: 'manage',
+		label: __( 'Manage Content', 'wp-content-types' ),
+		callback: ( items ) => {
+			const item = items[ 0 ];
+			window.location.href = getManageUrl( item.slug );
 		},
 	},
 ];

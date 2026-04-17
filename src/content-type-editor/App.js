@@ -22,6 +22,7 @@ import {
 import { Icon, chevronRight } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback } from '@wordpress/element';
+import FieldsList from './components/fields/FieldsList';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
 
@@ -120,7 +121,6 @@ function SupportsCheckboxes( { supports, onChange } ) {
 		<div className="wpct-supports-checkboxes">
 			{ SUPPORTS_OPTIONS.map( ( option ) => (
 				<CheckboxControl
-					__nextHasNoMarginBottom
 					key={ option.value }
 					label={ option.label }
 					checked={ currentSupports.includes( option.value ) }
@@ -131,20 +131,10 @@ function SupportsCheckboxes( { supports, onChange } ) {
 	);
 }
 
-function FieldsTab() {
+function FieldsTab( { fieldGroups } ) {
 	return (
 		<div className="wpct-editor__tab-content">
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'Fields', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
-					<p>{ __( 'Field configuration will go here.', 'wp-content-types' ) }</p>
-					<Button variant="secondary">
-						{ __( 'Add Field', 'wp-content-types' ) }
-					</Button>
-				</CardBody>
-			</Card>
+			<FieldsList fieldGroups={ fieldGroups } />
 		</div>
 	);
 }
@@ -207,7 +197,6 @@ function SettingsTab( { record, editedRecord, edit, config, updateConfig } ) {
 				</CardHeader>
 				<CardBody>
 					<TextControl
-						__nextHasNoMarginBottom
 						label={ __( 'Name', 'wp-content-types' ) }
 						value={ title }
 						onChange={ handleTitleChange }
@@ -215,7 +204,6 @@ function SettingsTab( { record, editedRecord, edit, config, updateConfig } ) {
 						help={ __( 'The singular name for this content type.', 'wp-content-types' ) }
 					/>
 					<TextControl
-						__nextHasNoMarginBottom
 						label={ __( 'Slug', 'wp-content-types' ) }
 						value={ slug }
 						onChange={ ( value ) => edit( { slug: generateSlug( value ) } ) }
@@ -223,7 +211,6 @@ function SettingsTab( { record, editedRecord, edit, config, updateConfig } ) {
 						help={ __( 'Max 20 characters, lowercase letters, numbers, underscores.', 'wp-content-types' ) }
 					/>
 					<ToggleControl
-						__nextHasNoMarginBottom
 						label={ __( 'Public', 'wp-content-types' ) }
 						help={ __( 'Makes this content type visible on the front end.', 'wp-content-types' ) }
 						checked={ config.public ?? DEFAULT_CONFIG.public }
@@ -258,7 +245,6 @@ function AdvancedTab( { slug, config, updateConfig } ) {
 				</CardHeader>
 				<CardBody>
 					<ToggleControl
-						__nextHasNoMarginBottom
 						label={ __( 'Hierarchical', 'wp-content-types' ) }
 						help={ __( 'Allow parent/child relationships like pages.', 'wp-content-types' ) }
 						checked={ config.hierarchical ?? DEFAULT_CONFIG.hierarchical }
@@ -267,14 +253,12 @@ function AdvancedTab( { slug, config, updateConfig } ) {
 					{ isPublic && (
 						<>
 							<ToggleControl
-								__nextHasNoMarginBottom
 								label={ __( 'Publicly Queryable', 'wp-content-types' ) }
 								help={ __( 'Allow queries on the front end.', 'wp-content-types' ) }
 								checked={ config.publicly_queryable ?? DEFAULT_CONFIG.publicly_queryable }
 								onChange={ ( value ) => updateConfig( 'publicly_queryable', value ) }
 							/>
 							<ToggleControl
-								__nextHasNoMarginBottom
 								label={ __( 'Exclude from Search', 'wp-content-types' ) }
 								help={ __( 'Hide from search results.', 'wp-content-types' ) }
 								checked={ config.exclude_from_search ?? DEFAULT_CONFIG.exclude_from_search }
@@ -292,14 +276,12 @@ function AdvancedTab( { slug, config, updateConfig } ) {
 					</CardHeader>
 					<CardBody>
 						<ToggleControl
-							__nextHasNoMarginBottom
 							label={ __( 'Has Archive', 'wp-content-types' ) }
 							help={ __( 'Enable archive page for this content type.', 'wp-content-types' ) }
 							checked={ config.has_archive ?? DEFAULT_CONFIG.has_archive }
 							onChange={ ( value ) => updateConfig( 'has_archive', value ) }
 						/>
 						<TextControl
-							__nextHasNoMarginBottom
 							label={ __( 'Rewrite Slug', 'wp-content-types' ) }
 							value={ config.rewrite_slug ?? '' }
 							onChange={ ( value ) => updateConfig( 'rewrite_slug', value ) }
@@ -307,7 +289,6 @@ function AdvancedTab( { slug, config, updateConfig } ) {
 							help={ __( 'Custom URL slug. Leave empty to use the post type slug.', 'wp-content-types' ) }
 						/>
 						<ToggleControl
-							__nextHasNoMarginBottom
 							label={ __( 'With Front', 'wp-content-types' ) }
 							help={ __( 'Prepend the permalink structure front base.', 'wp-content-types' ) }
 							checked={ config.with_front ?? DEFAULT_CONFIG.with_front }
@@ -323,14 +304,12 @@ function AdvancedTab( { slug, config, updateConfig } ) {
 				</CardHeader>
 				<CardBody>
 					<ToggleControl
-						__nextHasNoMarginBottom
 						label={ __( 'Show in REST API', 'wp-content-types' ) }
 						help={ __( 'Required for block editor support.', 'wp-content-types' ) }
 						checked={ config.show_in_rest ?? DEFAULT_CONFIG.show_in_rest }
 						onChange={ ( value ) => updateConfig( 'show_in_rest', value ) }
 					/>
 					<TextControl
-						__nextHasNoMarginBottom
 						label={ __( 'REST Base', 'wp-content-types' ) }
 						value={ config.rest_base ?? '' }
 						onChange={ ( value ) => updateConfig( 'rest_base', value ) }
@@ -345,7 +324,6 @@ function AdvancedTab( { slug, config, updateConfig } ) {
 				</CardHeader>
 				<CardBody>
 					<TextControl
-						__nextHasNoMarginBottom
 						label={ __( 'Menu Icon', 'wp-content-types' ) }
 						value={ config.menu_icon ?? DEFAULT_CONFIG.menu_icon }
 						onChange={ ( value ) => updateConfig( 'menu_icon', value ) }
@@ -380,7 +358,7 @@ function EditorContent( { record, editedRecord, edit, config, updateConfig } ) {
 				<TabPanel tabs={ tabs }>
 					{ ( tab ) => {
 						if ( tab.name === 'fields' ) {
-							return <FieldsTab />;
+							return <FieldsTab fieldGroups={ config.field_groups } />;
 						}
 						if ( tab.name === 'settings' ) {
 							return (

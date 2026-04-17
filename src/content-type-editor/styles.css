@@ -2,6 +2,11 @@
  * Content Type Editor Styles
  */
 
+/* Hide WordPress admin footer in fullscreen mode */
+body.is-fullscreen-mode #wpfooter {
+	display: none;
+}
+
 /* Full-screen editor layout */
 .wpct-editor {
 	position: fixed;
@@ -12,6 +17,7 @@
 	display: flex;
 	flex-direction: column;
 	background: #fff;
+	z-index: 100;
 }
 
 .folded .wpct-editor {
@@ -69,12 +75,37 @@
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
+	min-height: 0;
 }
 
 .wpct-editor__content-inner {
 	display: flex;
 	flex-direction: column;
-	height: 100%;
+	flex: 1;
+	overflow: hidden;
+	min-height: 0;
+}
+
+/* TabPanel component wrapper - needs to fill space */
+.wpct-editor__content-inner > div {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+
+/* TabPanel tabs row */
+.wpct-editor__content-inner .components-tab-panel__tabs {
+	flex-shrink: 0;
+}
+
+/* TabPanel content area */
+.wpct-editor__content-inner .components-tab-panel__tab-content {
+	flex: 1;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
 }
 
 .wpct-editor__tab-content {
@@ -84,6 +115,13 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+	min-height: 0;
+}
+
+.wpct-editor__tab-content::-webkit-scrollbar {
+	display: none;
 }
 
 .wpct-editor__tab-content .components-card {
@@ -96,12 +134,23 @@
 	margin-bottom: 0;
 }
 
+/* Form field spacing inside cards */
+.wpct-editor__tab-content .components-card__body > * + * {
+	margin-top: 16px;
+}
+
 /* Sidebar */
 .wpct-editor__sidebar {
 	width: 280px;
 	border-left: 1px solid #ddd;
 	overflow-y: auto;
 	flex-shrink: 0;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.wpct-editor__sidebar::-webkit-scrollbar {
+	display: none;
 }
 
 .wpct-editor__sidebar .components-panel {
@@ -117,6 +166,135 @@
 
 .wpct-supports-checkboxes .components-checkbox-control {
 	margin-bottom: 0;
+}
+
+/* Fields List */
+.wpct-fields-list {
+	width: 100%;
+	max-width: 600px;
+}
+
+.wpct-fields-list--empty .components-card {
+	text-align: center;
+}
+
+.wpct-fields-list__empty-state p {
+	margin: 0 0 8px;
+}
+
+.wpct-fields-list__empty-hint {
+	color: #757575;
+	font-size: 13px;
+}
+
+/* Field Group Card */
+.wpct-field-group-card {
+	margin-bottom: 16px;
+}
+
+.wpct-field-group-card:last-child {
+	margin-bottom: 0;
+}
+
+.wpct-field-group-card__header {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.wpct-field-group-card__description {
+	color: #757575;
+	font-size: 13px;
+}
+
+.wpct-field-group-card__empty {
+	color: #757575;
+	font-style: italic;
+	margin: 0;
+}
+
+.wpct-field-group-card__fields {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Field Item */
+.wpct-field-item {
+	padding: 16px;
+	background: #f6f7f7;
+	border-radius: 4px;
+}
+
+.wpct-field-item__header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.wpct-field-item__label {
+	font-weight: 600;
+}
+
+.wpct-field-item__type {
+	color: #757575;
+	font-size: 12px;
+}
+
+.wpct-field-item__required {
+	margin-left: auto;
+	font-size: 12px;
+}
+
+.wpct-field-item__required.is-required {
+	color: #d63638;
+}
+
+.wpct-field-item__required.is-optional {
+	color: #757575;
+}
+
+.wpct-field-item__preview {
+	margin-bottom: 8px;
+}
+
+.wpct-field-item__preview .components-base-control {
+	margin-bottom: 0;
+}
+
+.wpct-field-item__preview--checkbox {
+	margin-bottom: 0;
+}
+
+.wpct-field-item__preview--checkbox .components-checkbox-control {
+	margin-bottom: 0;
+}
+
+.wpct-field-item__description {
+	color: #757575;
+	font-size: 12px;
+	margin-top: 8px;
+}
+
+/* Field Preview - Date */
+.wpct-field-preview__date {
+	opacity: 0.7;
+	pointer-events: none;
+}
+
+.wpct-field-preview__date .components-datetime__date {
+	padding: 0;
+}
+
+/* Field Preview - Unknown */
+.wpct-field-item__unknown {
+	padding: 12px;
+	background: #fcf0f1;
+	border: 1px solid #d63638;
+	border-radius: 2px;
+	color: #d63638;
+	font-size: 12px;
 }
 
 /* Responsive */

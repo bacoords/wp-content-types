@@ -4,6 +4,11 @@
  * Content Types List Styles
  */
 
+/* Hide WordPress admin footer in fullscreen mode */
+body.is-fullscreen-mode #wpfooter {
+	display: none;
+}
+
 /* Full-screen list layout */
 .wpct-list {
 	position: fixed;
@@ -14,6 +19,7 @@
 	display: flex;
 	flex-direction: column;
 	background: #fff;
+	z-index: 100;
 }
 
 .folded .wpct-list {
@@ -62,6 +68,12 @@
 	flex: 1;
 	overflow: auto;
 	padding: 16px;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.wpct-list__content::-webkit-scrollbar {
+	display: none;
 }
 
 /* Sidebar */
@@ -70,6 +82,12 @@
 	border-left: 1px solid #ddd;
 	overflow-y: auto;
 	flex-shrink: 0;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.wpct-list__sidebar::-webkit-scrollbar {
+	display: none;
 }
 
 .wpct-list__sidebar .components-panel {

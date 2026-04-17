@@ -17,3 +17,5 @@ npm-debug.log*
 
 # Docs (internal for now)
 docs/
+
+.playwright-cli/*
