@@ -6,19 +6,64 @@ import { useEntityRecords } from '@wordpress/core-data';
 import { DataViews } from '@wordpress/dataviews';
 import {
 	Button,
+	Icon,
 	Panel,
 	PanelBody,
 	SlotFillProvider,
 	Popover,
 } from '@wordpress/components';
+import { lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 
-function getEditUrl( id ) {
-	return `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ id }`;
+function getEditUrl( item ) {
+	// For hardcoded types without a database ID, use slug.
+	const identifier = item.id && ! String( item.id ).startsWith( 'hardcoded-' ) ? item.id : item.slug;
+	return `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ identifier }`;
 }
 
 function getManageUrl( slug ) {
 	return `${ window.wpctSettings.adminUrl }edit.php?post_type=${ slug }`;
+}
+
+const CORE_POST_TYPES = [ 'post', 'page', 'attachment' ];
+
+function getSourceLabel( source, slug ) {
+	switch ( source ) {
+		case 'hardcoded':
+			return CORE_POST_TYPES.includes( slug )
+				? __( 'Core', 'wp-content-types' )
+				: __( 'Code', 'wp-content-types' );
+		case 'merged':
+			return __( 'Extended', 'wp-content-types' );
+		case 'database':
+		default:
+			return __( 'Custom', 'wp-content-types' );
+	}
+}
+
+function SourceBadge( { source, slug } ) {
+	const label = getSourceLabel( source, slug );
+	const isEditable = source === 'database';
+	const showLock = source === 'hardcoded';
+
+	const style = {
+		display: 'inline-flex',
+		alignItems: 'center',
+		gap: '4px',
+		padding: '2px 8px',
+		borderRadius: '2px',
+		fontSize: '12px',
+		fontWeight: 500,
+		backgroundColor: isEditable ? '#e7f5e7' : '#f0f0f0',
+		color: isEditable ? '#1e7b1e' : '#50575e',
+	};
+
+	return (
+		<span style={ style }>
+			{ showLock && <Icon icon={ lock } size={ 12 } /> }
+			{ label }
+		</span>
+	);
 }
 
 const fields = [
@@ -29,7 +74,7 @@ const fields = [
 		render: ( { item } ) => {
 			const title = item.title?.rendered || item.title;
 			return (
-				<a href={ getEditUrl( item.id ) } style={ { fontWeight: 600 } }>
+				<a href={ getEditUrl( item ) } style={ { fontWeight: 600 } }>
 					{ title }
 				</a>
 			);
@@ -40,6 +85,18 @@ const fields = [
 		id: 'slug',
 		label: __( 'Slug', 'wp-content-types' ),
 		getValue: ( { item } ) => item.slug,
+	},
+	{
+		id: 'source',
+		label: __( 'Source', 'wp-content-types' ),
+		getValue: ( { item } ) => getSourceLabel( item.source, item.slug ),
+		render: ( { item } ) => <SourceBadge source={ item.source } slug={ item.slug } />,
+		elements: [
+			{ value: __( 'Core', 'wp-content-types' ), label: __( 'Core', 'wp-content-types' ) },
+			{ value: __( 'Code', 'wp-content-types' ), label: __( 'Code', 'wp-content-types' ) },
+			{ value: __( 'Extended', 'wp-content-types' ), label: __( 'Extended', 'wp-content-types' ) },
+			{ value: __( 'Custom', 'wp-content-types' ), label: __( 'Custom', 'wp-content-types' ) },
+		],
 	},
 	{
 		id: 'visibility',
@@ -62,7 +119,7 @@ const actions = [
 		isPrimary: true,
 		callback: ( items ) => {
 			const item = items[ 0 ];
-			window.location.href = getEditUrl( item.id );
+			window.location.href = getEditUrl( item );
 		},
 	},
 	{
@@ -71,6 +128,27 @@ const actions = [
 		callback: ( items ) => {
 			const item = items[ 0 ];
 			window.location.href = getManageUrl( item.slug );
+		},
+	},
+	{
+		id: 'delete',
+		label: __( 'Delete', 'wp-content-types' ),
+		isDestructive: true,
+		isEligible: ( item ) => item.source === 'database',
+		callback: async ( items ) => {
+			const item = items[ 0 ];
+			// TODO: Implement delete via REST API
+			if ( window.confirm( __( 'Are you sure you want to delete this content type?', 'wp-content-types' ) ) ) {
+				try {
+					const response = await window.wp.apiFetch( {
+						path: `/wp/v2/content-types/${ item.id }`,
+						method: 'DELETE',
+					} );
+					window.location.reload();
+				} catch ( error ) {
+					console.error( 'Failed to delete content type:', error );
+				}
+			}
 		},
 	},
 ];
@@ -131,7 +209,8 @@ export default function App() {
 
 	const [ view, setView ] = useState( {
 		type: 'table',
-		fields: [ 'name', 'slug', 'visibility' ],
+		titleField: 'name',
+		fields: [ 'slug', 'source', 'visibility' ],
 	} );
 
 	useEffect( () => {

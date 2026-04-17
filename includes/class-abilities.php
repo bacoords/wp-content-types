@@ -291,6 +291,60 @@ class WPCT_Abilities {
 			);
 		}
 
+		// For hardcoded/merged types, only allow field_groups and fields updates.
+		if ( 'database' !== $existing['source'] ) {
+			$allowed_keys = array( 'config' );
+
+			// Check for disallowed updates.
+			foreach ( array_keys( $input ) as $key ) {
+				if ( ! in_array( $key, $allowed_keys, true ) ) {
+					return array(
+						'success' => false,
+						'error'   => array(
+							'code'    => 'cannot_modify_core_type',
+							'message' => __( 'Cannot modify core settings of a core content type. Only custom fields can be added.', 'wp-content-types' ),
+						),
+					);
+				}
+			}
+
+			// For config updates, only allow field_groups and fields.
+			if ( isset( $input['config'] ) ) {
+				$config          = $input['config'];
+				$allowed_configs = array( 'field_groups', 'fields' );
+				$existing_config = $existing['config'];
+
+				foreach ( array_keys( $config ) as $config_key ) {
+					if ( ! in_array( $config_key, $allowed_configs, true ) ) {
+						// Check if the value is actually different.
+						if ( isset( $existing_config[ $config_key ] ) && $existing_config[ $config_key ] === $config[ $config_key ] ) {
+							continue; // Same value, no actual change.
+						}
+						return array(
+							'success' => false,
+							'error'   => array(
+								'code'    => 'cannot_modify_core_settings',
+								'message' => sprintf(
+									/* translators: %s: config key */
+									__( 'Cannot modify core setting "%s" of a core content type.', 'wp-content-types' ),
+									$config_key
+								),
+							),
+						);
+					}
+				}
+
+				// Only keep allowed config changes.
+				$filtered_config = array();
+				foreach ( $allowed_configs as $allowed_key ) {
+					if ( isset( $config[ $allowed_key ] ) ) {
+						$filtered_config[ $allowed_key ] = $config[ $allowed_key ];
+					}
+				}
+				$input['config'] = array_merge( $existing_config, $filtered_config );
+			}
+		}
+
 		$result = WPCT_Content_Type::update( $id, $input );
 
 		if ( is_wp_error( $result ) ) {
@@ -327,6 +381,17 @@ class WPCT_Abilities {
 			);
 		}
 
+		// Block deletion of hardcoded or merged types.
+		if ( 'database' !== $existing['source'] ) {
+			return array(
+				'success' => false,
+				'error'   => array(
+					'code'    => 'cannot_delete_core_type',
+					'message' => __( 'Cannot delete a core content type.', 'wp-content-types' ),
+				),
+			);
+		}
+
 		$result = WPCT_Content_Type::delete( $input['id'] );
 
 		if ( ! $result ) {
@@ -352,7 +417,29 @@ class WPCT_Abilities {
 	 * @return array
 	 */
 	public static function execute_list_fields( $input ) {
-		$content_type = WPCT_Content_Type::get( $input['content_type_id'] );
+		$content_type_id = $input['content_type_id'];
+
+		// Support slug-based lookup for hardcoded types.
+		if ( ! is_numeric( $content_type_id ) ) {
+			$content_type = WPCT_Registry::get( $content_type_id );
+			if ( ! $content_type ) {
+				return array(
+					'success' => false,
+					'error'   => array(
+						'code'    => 'not_found',
+						'message' => __( 'Content type not found.', 'wp-content-types' ),
+					),
+				);
+			}
+
+			// Return fields from merged config.
+			return array(
+				'success' => true,
+				'data'    => $content_type['config']['fields'] ?? array(),
+			);
+		}
+
+		$content_type = WPCT_Content_Type::get( $content_type_id );
 
 		if ( ! $content_type ) {
 			return array(
@@ -364,7 +451,7 @@ class WPCT_Abilities {
 			);
 		}
 
-		$fields = WPCT_Field::get_all( $input['content_type_id'] );
+		$fields = WPCT_Field::get_all( $content_type_id );
 
 		return array(
 			'success' => true,
@@ -381,6 +468,20 @@ class WPCT_Abilities {
 	public static function execute_add_field( $input ) {
 		$content_type_id = $input['content_type_id'];
 		unset( $input['content_type_id'] );
+
+		// Check if this is a slug (for hardcoded types).
+		if ( ! is_numeric( $content_type_id ) ) {
+			$content_type_id = self::get_or_create_content_type_for_slug( $content_type_id );
+			if ( is_wp_error( $content_type_id ) ) {
+				return array(
+					'success' => false,
+					'error'   => array(
+						'code'    => $content_type_id->get_error_code(),
+						'message' => $content_type_id->get_error_message(),
+					),
+				);
+			}
+		}
 
 		$content_type = WPCT_Content_Type::get( $content_type_id );
 		if ( ! $content_type ) {
@@ -411,6 +512,45 @@ class WPCT_Abilities {
 			'success' => true,
 			'data'    => $field,
 		);
+	}
+
+	/**
+	 * Get or create a database record for a hardcoded content type.
+	 *
+	 * @param string $slug Content type slug.
+	 * @return int|WP_Error Database ID or error.
+	 */
+	private static function get_or_create_content_type_for_slug( $slug ) {
+		// Check if this is a hardcoded type.
+		$content_type = WPCT_Registry::get( $slug );
+		if ( ! $content_type ) {
+			return new WP_Error( 'not_found', __( 'Content type not found.', 'wp-content-types' ) );
+		}
+
+		// If it already has a database ID (merged type), use it.
+		if ( $content_type['id'] ) {
+			return $content_type['id'];
+		}
+
+		// Create a database record for this hardcoded type.
+		$result = WPCT_Content_Type::create(
+			array(
+				'name'   => $content_type['name'],
+				'slug'   => $slug,
+				'config' => array(
+					'field_groups' => array(),
+				),
+			)
+		);
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Clear registry cache so the merged type is reflected.
+		WPCT_Registry::clear_cache();
+
+		return $result;
 	}
 
 	/**

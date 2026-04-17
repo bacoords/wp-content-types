@@ -26,15 +26,16 @@ class WPCT_Content_Type {
 		register_post_type(
 			self::POST_TYPE,
 			array(
-				'labels'       => array(
+				'labels'                => array(
 					'name'          => __( 'Content Types', 'wp-content-types' ),
 					'singular_name' => __( 'Content Type', 'wp-content-types' ),
 				),
-				'public'       => false,
-				'show_ui'      => false,
-				'show_in_rest' => true,
-				'rest_base'    => 'content-types',
-				'supports'     => array( 'title', 'custom-fields' ),
+				'public'                => false,
+				'show_ui'               => false,
+				'show_in_rest'          => true,
+				'rest_base'             => 'content-types',
+				'rest_controller_class' => 'WPCT_REST_Controller',
+				'supports'              => array( 'title', 'custom-fields' ),
 			)
 		);
 	}

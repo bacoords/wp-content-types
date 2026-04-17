@@ -16,9 +16,9 @@ import {
 	__experimentalHeading as Heading,
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
-import { Icon, chevronRight } from '@wordpress/icons';
+import { Icon, chevronRight, lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useCallback, useMemo } from '@wordpress/element';
+import { useEffect, useCallback, useMemo, useState } from '@wordpress/element';
 import FieldsList from './components/fields/FieldsList';
 import FieldEditorPanel from './components/fields/FieldEditorPanel';
 import GroupEditorPanel from './components/fields/GroupEditorPanel';
@@ -28,6 +28,8 @@ import { useFormData } from './hooks/useFormData';
 import { useFieldsManager } from './hooks/useFieldsManager';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
+const contentTypeSlug = window.wpctSettings?.contentTypeSlug;
+const contentTypeData = window.wpctSettings?.contentTypeData;
 
 const DEFAULT_CONFIG = {
 	public: true,
@@ -44,8 +46,20 @@ const DEFAULT_CONFIG = {
 	supports: [ 'title', 'editor', 'thumbnail', 'custom-fields' ],
 };
 
-function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
+const CORE_POST_TYPES = [ 'post', 'page', 'attachment' ];
+
+function getSourceBadgeLabel( source, slug ) {
+	if ( source === 'hardcoded' ) {
+		return CORE_POST_TYPES.includes( slug )
+			? __( 'Core', 'wp-content-types' )
+			: __( 'Code', 'wp-content-types' );
+	}
+	return __( 'Extended', 'wp-content-types' );
+}
+
+function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 	const listUrl = window.wpctSettings.adminUrl + 'admin.php?page=wp-content-types';
+	const isReadOnly = source !== 'database';
 
 	return (
 		<div className="wpct-editor__header">
@@ -55,6 +69,22 @@ function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
 				</a>
 				<Icon icon={ chevronRight } size={ 16 } />
 				<strong>{ title || __( 'New Content Type', 'wp-content-types' ) }</strong>
+				{ isReadOnly && (
+					<span style={ {
+						display: 'inline-flex',
+						alignItems: 'center',
+						gap: '4px',
+						marginLeft: '8px',
+						padding: '2px 8px',
+						borderRadius: '2px',
+						fontSize: '12px',
+						backgroundColor: '#f0f0f0',
+						color: '#50575e',
+					} }>
+						{ source === 'hardcoded' && <Icon icon={ lock } size={ 12 } /> }
+						{ getSourceBadgeLabel( source, slug ) }
+					</span>
+				) }
 			</nav>
 			<div className="wpct-editor__header-actions">
 				{ hasEdits && (
@@ -222,11 +252,15 @@ function AdvancedTab( { record, editedRecord, edit, config, updateConfig } ) {
 	);
 }
 
-function EditorContent( { record, editedRecord, edit, config, updateConfig, fieldsManager } ) {
+function EditorContent( { record, editedRecord, edit, config, updateConfig, fieldsManager, source } ) {
+	const isReadOnly = source !== 'database';
+
 	const tabs = [
 		{ name: 'fields', title: __( 'Fields', 'wp-content-types' ) },
-		{ name: 'settings', title: __( 'Settings', 'wp-content-types' ) },
-		{ name: 'advanced', title: __( 'Advanced', 'wp-content-types' ) },
+		...( isReadOnly ? [] : [
+			{ name: 'settings', title: __( 'Settings', 'wp-content-types' ) },
+			{ name: 'advanced', title: __( 'Advanced', 'wp-content-types' ) },
+		] ),
 		{ name: 'json', title: __( 'JSON', 'wp-content-types' ) },
 	];
 
@@ -283,32 +317,93 @@ function EditorContent( { record, editedRecord, edit, config, updateConfig, fiel
 }
 
 export default function App() {
+	// For database content types, use entity record
 	const { record, editedRecord, hasEdits, edit, save, isSaving, hasResolved } =
-		useEntityRecord( 'postType', 'wp_content_type', contentTypeId );
+		useEntityRecord( 'postType', 'wp_content_type', contentTypeId || 0 );
 
-	const title = editedRecord?.title ?? record?.title?.rendered ?? '';
-	const savedConfig = record?.config ?? {};
-	const editedConfig = editedRecord?.config ?? savedConfig;
+	// For hardcoded content types, use local state
+	const [ hardcodedState, setHardcodedState ] = useState( () => {
+		if ( contentTypeData ) {
+			return {
+				config: { ...DEFAULT_CONFIG, ...contentTypeData.config },
+				hasEdits: false,
+			};
+		}
+		return null;
+	} );
+
+	// Determine if we're editing a hardcoded type
+	const isHardcodedType = !! contentTypeSlug && !! contentTypeData;
+	const source = isHardcodedType
+		? contentTypeData.source
+		: ( record?.source ?? 'database' );
+
+	// Title handling
+	const title = isHardcodedType
+		? contentTypeData.name
+		: ( editedRecord?.title ?? record?.title?.rendered ?? '' );
+
+	// Config handling
+	const savedConfig = isHardcodedType
+		? contentTypeData.config
+		: ( record?.config ?? {} );
+	const editedConfig = isHardcodedType
+		? hardcodedState?.config
+		: ( editedRecord?.config ?? savedConfig );
 	const config = { ...DEFAULT_CONFIG, ...editedConfig };
 
 	const updateConfig = useCallback(
 		( key, value ) => {
-			edit( {
-				config: {
-					...editedConfig,
-					[ key ]: value,
-				},
-			} );
+			if ( isHardcodedType ) {
+				setHardcodedState( ( prev ) => ( {
+					...prev,
+					config: {
+						...prev.config,
+						[ key ]: value,
+					},
+					hasEdits: true,
+				} ) );
+			} else {
+				edit( {
+					config: {
+						...editedConfig,
+						[ key ]: value,
+					},
+				} );
+			}
 		},
-		[ edit, editedConfig ]
+		[ edit, editedConfig, isHardcodedType ]
 	);
 
 	// Initialize fields manager hook
 	const fieldsManager = useFieldsManager( { config, updateConfig } );
 
 	const handleSave = async () => {
-		await save();
+		if ( isHardcodedType ) {
+			// For hardcoded types, we need to create a database record to store custom fields
+			try {
+				const response = await window.wp.apiFetch( {
+					path: '/wp/v2/content-types',
+					method: 'POST',
+					data: {
+						title: contentTypeData.name,
+						slug: contentTypeSlug,
+						status: 'publish',
+						config: hardcodedState.config,
+					},
+				} );
+
+				// Redirect to the new database record
+				window.location.href = `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ response.id }`;
+			} catch ( error ) {
+				console.error( 'Failed to save content type:', error );
+			}
+		} else {
+			await save();
+		}
 	};
+
+	const currentHasEdits = isHardcodedType ? hardcodedState?.hasEdits : hasEdits;
 
 	useEffect( () => {
 		document.body.classList.add( 'is-fullscreen-mode' );
@@ -317,7 +412,8 @@ export default function App() {
 		};
 	}, [] );
 
-	if ( ! contentTypeId ) {
+	// No content type specified
+	if ( ! contentTypeId && ! contentTypeSlug ) {
 		return (
 			<div className="wpct-editor wpct-editor--empty">
 				<p>{ __( 'No content type specified.', 'wp-content-types' ) }</p>
@@ -325,7 +421,8 @@ export default function App() {
 		);
 	}
 
-	if ( ! hasResolved ) {
+	// Loading state (only for database types)
+	if ( contentTypeId && ! hasResolved ) {
 		return (
 			<div className="wpct-editor wpct-editor--loading">
 				<Spinner />
@@ -339,8 +436,10 @@ export default function App() {
 				<EditorHeader
 					title={ title }
 					isSaving={ isSaving }
-					hasEdits={ hasEdits }
+					hasEdits={ currentHasEdits }
 					onSave={ handleSave }
+					source={ source }
+					slug={ isHardcodedType ? contentTypeSlug : ( editedRecord?.slug ?? record?.slug ?? '' ) }
 				/>
 				<div className="wpct-editor__body">
 					<EditorContent
@@ -350,6 +449,7 @@ export default function App() {
 						config={ config }
 						updateConfig={ updateConfig }
 						fieldsManager={ fieldsManager }
+						source={ source }
 					/>
 					<EditorSidebar
 						fieldsManager={ fieldsManager }

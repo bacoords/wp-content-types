@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once WPCT_PATH . 'includes/class-content-type.php';
 require_once WPCT_PATH . 'includes/class-field.php';
 require_once WPCT_PATH . 'includes/class-registry.php';
+require_once WPCT_PATH . 'includes/class-rest-controller.php';
 require_once WPCT_PATH . 'includes/class-post-type-registrar.php';
 require_once WPCT_PATH . 'includes/class-admin.php';
 

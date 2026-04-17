@@ -150,9 +150,21 @@ class WPCT_Admin {
 			'adminUrl' => admin_url(),
 		);
 
-		// Pass content type ID when editing.
+		// Pass content type ID or data when editing.
 		if ( 'content-type-editor' === $script_name && isset( $_GET['id'] ) ) {
-			$settings['contentTypeId'] = absint( $_GET['id'] );
+			$id = sanitize_text_field( wp_unslash( $_GET['id'] ) );
+
+			// Check if this is a numeric ID (database record) or slug (hardcoded type).
+			if ( is_numeric( $id ) ) {
+				$settings['contentTypeId'] = absint( $id );
+			} else {
+				// Slug-based access for hardcoded types.
+				$content_type = WPCT_Registry::get( $id );
+				if ( $content_type ) {
+					$settings['contentTypeSlug'] = $id;
+					$settings['contentTypeData'] = $content_type;
+				}
+			}
 		}
 
 		wp_localize_script( "wpct-{$script_name}", 'wpctSettings', $settings );
