@@ -49,9 +49,29 @@
 	flex-shrink: 0;
 }
 
-.wpct-editor__title {
+/* Breadcrumb navigation */
+.wpct-editor__breadcrumb {
+	display: flex;
+	align-items: center;
+	gap: 4px;
 	margin: 0;
 	font-size: 14px;
+}
+
+.wpct-editor__breadcrumb-link {
+	color: #3858e9;
+	text-decoration: none;
+}
+
+.wpct-editor__breadcrumb-link:hover {
+	text-decoration: underline;
+}
+
+.wpct-editor__breadcrumb-separator {
+	fill: #757575;
+}
+
+.wpct-editor__breadcrumb-current {
 	font-weight: 600;
 	color: #1e1e1e;
 }

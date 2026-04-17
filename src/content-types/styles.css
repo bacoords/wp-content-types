@@ -1,1 +1,31 @@
 @import "@wordpress/dataviews/build-style/style.css";
+
+/* List container */
+.wpct-list {
+	margin-left: -20px;
+	margin-right: -10px;
+	margin-top: -10px;
+}
+
+/* List header - matches editor header */
+.wpct-list__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 20px;
+	height: 60px;
+	border-bottom: 1px solid #ddd;
+	background: #fff;
+}
+
+.wpct-list__title {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1e1e1e;
+}
+
+/* List content area */
+.wpct-list__content {
+	padding: 20px;
+}

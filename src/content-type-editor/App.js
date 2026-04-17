@@ -17,6 +17,7 @@ import {
 	Popover,
 	NavigableMenu,
 } from '@wordpress/components';
+import { Icon, chevronRight } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 
@@ -26,6 +27,8 @@ const contentTypeId = window.wpctSettings?.contentTypeId;
  * Editor Header component
  */
 function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
+	const listUrl = window.wpctSettings.adminUrl + 'admin.php?page=wp-content-types';
+
 	return (
 		<div
 			className="wpct-editor__header"
@@ -33,9 +36,15 @@ function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
 			aria-label={ __( 'Editor top bar', 'wp-content-types' ) }
 			tabIndex="-1"
 		>
-			<h1 className="wpct-editor__title">
-				{ title || __( 'New Content Type', 'wp-content-types' ) }
-			</h1>
+			<nav className="wpct-editor__breadcrumb" aria-label={ __( 'Breadcrumb', 'wp-content-types' ) }>
+				<a href={ listUrl } className="wpct-editor__breadcrumb-link">
+					{ __( 'Content Types', 'wp-content-types' ) }
+				</a>
+				<Icon icon={ chevronRight } size={ 16 } className="wpct-editor__breadcrumb-separator" />
+				<span className="wpct-editor__breadcrumb-current">
+					{ title || __( 'New Content Type', 'wp-content-types' ) }
+				</span>
+			</nav>
 			<div className="wpct-editor__header-actions">
 				{ hasEdits && (
 					<span className="wpct-editor__unsaved">
