@@ -66,7 +66,7 @@ class WPCT_Registry {
 	 *
 	 * @return array
 	 */
-	private static function get_hardcoded() {
+	public static function get_hardcoded() {
 		$post_types = get_post_types( array(), 'objects' );
 		$hardcoded  = array();
 
