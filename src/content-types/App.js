@@ -1,18 +1,18 @@
 /**
  * Content Types List App
  */
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { useEntityRecords } from '@wordpress/core-data';
 import { DataViews } from '@wordpress/dataviews';
-import { Button } from '@wordpress/components';
+import {
+	Button,
+	Panel,
+	PanelBody,
+	SlotFillProvider,
+	Popover,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-/**
- * Get the edit URL for a content type.
- *
- * @param {number} id The content type ID.
- * @return {string} The edit URL.
- */
 function getEditUrl( id ) {
 	return `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ id }`;
 }
@@ -25,7 +25,7 @@ const fields = [
 		render: ( { item } ) => {
 			const title = item.title?.rendered || item.title;
 			return (
-				<a href={ getEditUrl( item.id ) } className="wpct-list__name-link">
+				<a href={ getEditUrl( item.id ) }>
 					{ title }
 				</a>
 			);
@@ -63,20 +63,47 @@ const actions = [
 	},
 ];
 
-/**
- * List Header component
- */
 function ListHeader() {
 	const addNewUrl = window.wpctSettings.adminUrl + 'admin.php?page=wp-content-type-edit';
 
 	return (
 		<div className="wpct-list__header">
-			<h1 className="wpct-list__title">
-				{ __( 'Content Types', 'wp-content-types' ) }
-			</h1>
-			<Button variant="primary" href={ addNewUrl }>
-				{ __( 'Add New', 'wp-content-types' ) }
-			</Button>
+			<h1>{ __( 'Content Types', 'wp-content-types' ) }</h1>
+			<div className="wpct-list__header-actions">
+				<Button variant="primary" href={ addNewUrl }>
+					{ __( 'Add New', 'wp-content-types' ) }
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+function ListSidebar() {
+	return (
+		<div className="wpct-list__sidebar">
+			<Panel>
+				<PanelBody title={ __( 'About', 'wp-content-types' ) } initialOpen={ true }>
+					<p>{ __( 'Create and manage custom content types for your site.', 'wp-content-types' ) }</p>
+				</PanelBody>
+			</Panel>
+		</div>
+	);
+}
+
+function ListContent( { data, isLoading, view, onChangeView } ) {
+	return (
+		<div className="wpct-list__content">
+			<DataViews
+				data={ data }
+				fields={ fields }
+				view={ view }
+				onChangeView={ onChangeView }
+				paginationInfo={ { totalItems: data.length, totalPages: 1 } }
+				getItemId={ ( item ) => String( item.id ) }
+				isLoading={ isLoading }
+				defaultLayouts={ { table: {} } }
+				actions={ actions }
+			/>
 		</div>
 	);
 }
@@ -95,22 +122,28 @@ export default function App() {
 		fields: [ 'name', 'slug', 'visibility' ],
 	} );
 
+	useEffect( () => {
+		document.body.classList.add( 'is-fullscreen-mode' );
+		return () => {
+			document.body.classList.remove( 'is-fullscreen-mode' );
+		};
+	}, [] );
+
 	return (
-		<div className="wpct-list">
-			<ListHeader />
-			<div className="wpct-list__content">
-				<DataViews
-					data={ data }
-					fields={ fields }
-					view={ view }
-					onChangeView={ setView }
-					paginationInfo={ { totalItems: data.length, totalPages: 1 } }
-					getItemId={ ( item ) => String( item.id ) }
-					isLoading={ isResolving }
-					defaultLayouts={ { table: {} } }
-					actions={ actions }
-				/>
+		<SlotFillProvider>
+			<div className="wpct-list">
+				<ListHeader />
+				<div className="wpct-list__body">
+					<ListContent
+						data={ data }
+						isLoading={ isResolving }
+						view={ view }
+						onChangeView={ setView }
+					/>
+					<ListSidebar />
+				</div>
 			</div>
-		</div>
+			<Popover.Slot />
+		</SlotFillProvider>
 	);
 }

@@ -99,15 +99,13 @@
 /* Sidebar */
 .wpct-editor__sidebar {
 	width: 280px;
-	padding: 16px;
 	border-left: 1px solid #ddd;
 	overflow-y: auto;
 	flex-shrink: 0;
 }
 
-.wpct-editor__sidebar .components-card {
+.wpct-editor__sidebar .components-panel {
 	border: 0;
-	box-shadow: none;
 }
 
 /* Supports checkboxes grid */

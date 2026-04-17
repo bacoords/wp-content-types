@@ -7,6 +7,8 @@ import {
 	Card,
 	CardHeader,
 	CardBody,
+	Panel,
+	PanelBody,
 	TabPanel,
 	TextControl,
 	ToggleControl,
@@ -92,14 +94,11 @@ function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
 function EditorSidebar() {
 	return (
 		<div className="wpct-editor__sidebar">
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'Status', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
+			<Panel>
+				<PanelBody title={ __( 'Status', 'wp-content-types' ) } initialOpen={ true }>
 					<p>{ __( 'Content type status and actions will appear here.', 'wp-content-types' ) }</p>
-				</CardBody>
-			</Card>
+				</PanelBody>
+			</Panel>
 		</div>
 	);
 }
