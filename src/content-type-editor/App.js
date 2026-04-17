@@ -10,43 +10,21 @@ import {
 	Panel,
 	PanelBody,
 	TabPanel,
-	TextControl,
-	ToggleControl,
-	CheckboxControl,
 	Spinner,
 	SlotFillProvider,
 	Popover,
 	__experimentalHeading as Heading,
-	__experimentalNumberControl as NumberControl,
 } from '@wordpress/components';
+import { DataForm } from '@wordpress/dataviews';
 import { Icon, chevronRight } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useCallback } from '@wordpress/element';
+import { useEffect, useCallback, useMemo } from '@wordpress/element';
 import FieldsList from './components/fields/FieldsList';
+import { getSettingsFields, getAdvancedFields } from './fields';
+import { SETTINGS_FORM, getAdvancedForm } from './forms';
+import { useFormData } from './hooks/useFormData';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
-
-function generateSlug( name ) {
-	return name
-		.toLowerCase()
-		.replace( /[^a-z0-9]+/g, '_' )
-		.replace( /^_+|_+$/g, '' )
-		.substring( 0, 20 );
-}
-
-const SUPPORTS_OPTIONS = [
-	{ value: 'title', label: __( 'Title', 'wp-content-types' ) },
-	{ value: 'editor', label: __( 'Editor', 'wp-content-types' ) },
-	{ value: 'author', label: __( 'Author', 'wp-content-types' ) },
-	{ value: 'thumbnail', label: __( 'Featured Image', 'wp-content-types' ) },
-	{ value: 'excerpt', label: __( 'Excerpt', 'wp-content-types' ) },
-	{ value: 'comments', label: __( 'Comments', 'wp-content-types' ) },
-	{ value: 'trackbacks', label: __( 'Trackbacks', 'wp-content-types' ) },
-	{ value: 'revisions', label: __( 'Revisions', 'wp-content-types' ) },
-	{ value: 'page-attributes', label: __( 'Page Attributes', 'wp-content-types' ) },
-	{ value: 'custom-fields', label: __( 'Custom Fields', 'wp-content-types' ) },
-	{ value: 'post-formats', label: __( 'Post Formats', 'wp-content-types' ) },
-];
 
 const DEFAULT_CONFIG = {
 	public: true,
@@ -60,7 +38,7 @@ const DEFAULT_CONFIG = {
 	with_front: true,
 	menu_icon: 'dashicons-database',
 	menu_position: null,
-	supports: [ 'title', 'editor', 'thumbnail' ],
+	supports: [ 'title', 'editor', 'thumbnail', 'custom-fields' ],
 };
 
 function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
@@ -100,33 +78,6 @@ function EditorSidebar() {
 					<p>{ __( 'Content type status and actions will appear here.', 'wp-content-types' ) }</p>
 				</PanelBody>
 			</Panel>
-		</div>
-	);
-}
-
-function SupportsCheckboxes( { supports, onChange } ) {
-	const currentSupports = supports ?? DEFAULT_CONFIG.supports;
-
-	const handleChange = ( value, checked ) => {
-		let newSupports;
-		if ( checked ) {
-			newSupports = [ ...currentSupports, value ];
-		} else {
-			newSupports = currentSupports.filter( ( item ) => item !== value );
-		}
-		onChange( newSupports );
-	};
-
-	return (
-		<div className="wpct-supports-checkboxes">
-			{ SUPPORTS_OPTIONS.map( ( option ) => (
-				<CheckboxControl
-					key={ option.value }
-					label={ option.label }
-					checked={ currentSupports.includes( option.value ) }
-					onChange={ ( checked ) => handleChange( option.value, checked ) }
-				/>
-			) ) }
 		</div>
 	);
 }
@@ -174,177 +125,60 @@ function JsonTab( { record, editedRecord, config } ) {
 }
 
 function SettingsTab( { record, editedRecord, edit, config, updateConfig } ) {
-	const title = editedRecord?.title ?? record?.title?.rendered ?? '';
-	const slug = editedRecord?.slug ?? record?.slug ?? '';
-
-	const handleTitleChange = ( value ) => {
-		const edits = { title: value };
-		const previousTitle = editedRecord?.title ?? record?.title?.rendered ?? '';
-		const previousAutoSlug = generateSlug( previousTitle );
-
-		if ( ! slug || slug === previousAutoSlug ) {
-			edits.slug = generateSlug( value );
-		}
-
-		edit( edits );
-	};
+	const { formData, handleFormChange } = useFormData( {
+		record,
+		editedRecord,
+		edit,
+		config,
+		updateConfig,
+	} );
+	const fields = useMemo(
+		() => getSettingsFields( formData.slug ),
+		[ formData.slug ]
+	);
 
 	return (
 		<div className="wpct-editor__tab-content">
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'Basic Settings', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
-					<TextControl
-						label={ __( 'Name', 'wp-content-types' ) }
-						value={ title }
-						onChange={ handleTitleChange }
-						placeholder={ __( 'e.g. Book', 'wp-content-types' ) }
-						help={ __( 'The singular name for this content type.', 'wp-content-types' ) }
-					/>
-					<TextControl
-						label={ __( 'Slug', 'wp-content-types' ) }
-						value={ slug }
-						onChange={ ( value ) => edit( { slug: generateSlug( value ) } ) }
-						placeholder={ __( 'e.g. book', 'wp-content-types' ) }
-						help={ __( 'Max 20 characters, lowercase letters, numbers, underscores.', 'wp-content-types' ) }
-					/>
-					<ToggleControl
-						label={ __( 'Public', 'wp-content-types' ) }
-						help={ __( 'Makes this content type visible on the front end.', 'wp-content-types' ) }
-						checked={ config.public ?? DEFAULT_CONFIG.public }
-						onChange={ ( value ) => updateConfig( 'public', value ) }
-					/>
-				</CardBody>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'Features', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
-					<SupportsCheckboxes
-						supports={ config.supports }
-						onChange={ ( value ) => updateConfig( 'supports', value ) }
-					/>
-				</CardBody>
-			</Card>
+			<DataForm
+				data={ formData }
+				fields={ fields }
+				form={ SETTINGS_FORM }
+				onChange={ handleFormChange }
+			/>
 		</div>
 	);
 }
 
-function AdvancedTab( { slug, config, updateConfig } ) {
-	const isPublic = config.public ?? DEFAULT_CONFIG.public;
+function AdvancedTab( { record, editedRecord, edit, config, updateConfig } ) {
+	const { formData, handleFormChange } = useFormData( {
+		record,
+		editedRecord,
+		edit,
+		config,
+		updateConfig,
+	} );
+	const fields = useMemo(
+		() => getAdvancedFields( formData.slug ),
+		[ formData.slug ]
+	);
+	const form = useMemo(
+		() => getAdvancedForm( formData.public ),
+		[ formData.public ]
+	);
 
 	return (
 		<div className="wpct-editor__tab-content">
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'Visibility', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
-					<ToggleControl
-						label={ __( 'Hierarchical', 'wp-content-types' ) }
-						help={ __( 'Allow parent/child relationships like pages.', 'wp-content-types' ) }
-						checked={ config.hierarchical ?? DEFAULT_CONFIG.hierarchical }
-						onChange={ ( value ) => updateConfig( 'hierarchical', value ) }
-					/>
-					{ isPublic && (
-						<>
-							<ToggleControl
-								label={ __( 'Publicly Queryable', 'wp-content-types' ) }
-								help={ __( 'Allow queries on the front end.', 'wp-content-types' ) }
-								checked={ config.publicly_queryable ?? DEFAULT_CONFIG.publicly_queryable }
-								onChange={ ( value ) => updateConfig( 'publicly_queryable', value ) }
-							/>
-							<ToggleControl
-								label={ __( 'Exclude from Search', 'wp-content-types' ) }
-								help={ __( 'Hide from search results.', 'wp-content-types' ) }
-								checked={ config.exclude_from_search ?? DEFAULT_CONFIG.exclude_from_search }
-								onChange={ ( value ) => updateConfig( 'exclude_from_search', value ) }
-							/>
-						</>
-					) }
-				</CardBody>
-			</Card>
-
-			{ isPublic && (
-				<Card>
-					<CardHeader>
-						<Heading level={ 3 }>{ __( 'URLs & Permalinks', 'wp-content-types' ) }</Heading>
-					</CardHeader>
-					<CardBody>
-						<ToggleControl
-							label={ __( 'Has Archive', 'wp-content-types' ) }
-							help={ __( 'Enable archive page for this content type.', 'wp-content-types' ) }
-							checked={ config.has_archive ?? DEFAULT_CONFIG.has_archive }
-							onChange={ ( value ) => updateConfig( 'has_archive', value ) }
-						/>
-						<TextControl
-							label={ __( 'Rewrite Slug', 'wp-content-types' ) }
-							value={ config.rewrite_slug ?? '' }
-							onChange={ ( value ) => updateConfig( 'rewrite_slug', value ) }
-							placeholder={ slug || __( 'Uses post type slug', 'wp-content-types' ) }
-							help={ __( 'Custom URL slug. Leave empty to use the post type slug.', 'wp-content-types' ) }
-						/>
-						<ToggleControl
-							label={ __( 'With Front', 'wp-content-types' ) }
-							help={ __( 'Prepend the permalink structure front base.', 'wp-content-types' ) }
-							checked={ config.with_front ?? DEFAULT_CONFIG.with_front }
-							onChange={ ( value ) => updateConfig( 'with_front', value ) }
-						/>
-					</CardBody>
-				</Card>
-			) }
-
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'REST API', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
-					<ToggleControl
-						label={ __( 'Show in REST API', 'wp-content-types' ) }
-						help={ __( 'Required for block editor support.', 'wp-content-types' ) }
-						checked={ config.show_in_rest ?? DEFAULT_CONFIG.show_in_rest }
-						onChange={ ( value ) => updateConfig( 'show_in_rest', value ) }
-					/>
-					<TextControl
-						label={ __( 'REST Base', 'wp-content-types' ) }
-						value={ config.rest_base ?? '' }
-						onChange={ ( value ) => updateConfig( 'rest_base', value ) }
-						placeholder={ slug || __( 'Uses post type slug', 'wp-content-types' ) }
-					/>
-				</CardBody>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'Admin Menu', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
-					<TextControl
-						label={ __( 'Menu Icon', 'wp-content-types' ) }
-						value={ config.menu_icon ?? DEFAULT_CONFIG.menu_icon }
-						onChange={ ( value ) => updateConfig( 'menu_icon', value ) }
-						placeholder="dashicons-database"
-					/>
-					<NumberControl
-						label={ __( 'Menu Position', 'wp-content-types' ) }
-						value={ config.menu_position ?? '' }
-						onChange={ ( value ) => updateConfig( 'menu_position', value === '' ? null : parseInt( value, 10 ) ) }
-						min={ 0 }
-						max={ 100 }
-					/>
-				</CardBody>
-			</Card>
+			<DataForm
+				data={ formData }
+				fields={ fields }
+				form={ form }
+				onChange={ handleFormChange }
+			/>
 		</div>
 	);
 }
 
 function EditorContent( { record, editedRecord, edit, config, updateConfig } ) {
-	const slug = editedRecord?.slug ?? record?.slug ?? '';
-
 	const tabs = [
 		{ name: 'fields', title: __( 'Fields', 'wp-content-types' ) },
 		{ name: 'settings', title: __( 'Settings', 'wp-content-types' ) },
@@ -374,7 +208,9 @@ function EditorContent( { record, editedRecord, edit, config, updateConfig } ) {
 						if ( tab.name === 'advanced' ) {
 							return (
 								<AdvancedTab
-									slug={ slug }
+									record={ record }
+									editedRecord={ editedRecord }
+									edit={ edit }
 									config={ config }
 									updateConfig={ updateConfig }
 								/>

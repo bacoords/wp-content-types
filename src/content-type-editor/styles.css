@@ -130,6 +130,12 @@ body.is-fullscreen-mode #wpfooter {
 	margin-bottom: 16px;
 }
 
+/* DataForm container - match card width */
+.wpct-editor__tab-content > .dataforms-layouts__wrapper {
+	width: 100%;
+	max-width: 600px;
+}
+
 .wpct-editor__tab-content .components-card:last-child {
 	margin-bottom: 0;
 }
