@@ -1,0 +1,134 @@
+/**
+ * Post Editor Styles
+ */
+
+/* Editor wrapper - full height layout */
+.wpct-editor {
+	display: flex;
+	flex-direction: column;
+	min-height: calc(100vh - 100px);
+	background: #f0f0f0;
+	margin: -20px -20px 0 -2px;
+	padding: 0;
+}
+
+/* Header bar */
+.wpct-editor__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 24px;
+	background: #fff;
+	border-bottom: 1px solid #ddd;
+	position: sticky;
+	top: 32px;
+	z-index: 100;
+}
+
+.wpct-editor__header-left {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.wpct-editor__title {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.wpct-editor__unsaved-indicator {
+	font-size: 12px;
+	color: #d63638;
+	font-weight: 400;
+}
+
+.wpct-editor__header-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.wpct-editor__header-right .components-spinner {
+	margin-right: 4px;
+}
+
+/* Body - canvas + sidebar layout */
+.wpct-editor__body {
+	display: flex;
+	flex: 1;
+	gap: 0;
+}
+
+/* Main canvas area */
+.wpct-editor__canvas {
+	flex: 1;
+	padding: 24px;
+	overflow-y: auto;
+}
+
+.wpct-editor__canvas-inner {
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.wpct-editor__canvas .components-panel {
+	background: #fff;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.wpct-editor__canvas .components-notice {
+	margin-bottom: 16px;
+}
+
+.wpct-editor__placeholder {
+	color: #757575;
+	font-style: italic;
+	margin-bottom: 16px;
+}
+
+/* Sidebar */
+.wpct-editor__sidebar {
+	width: 280px;
+	background: #fff;
+	border-left: 1px solid #ddd;
+	overflow-y: auto;
+}
+
+.wpct-editor__sidebar .components-panel {
+	border: 0;
+}
+
+.wpct-editor__sidebar-info {
+	color: #757575;
+	font-size: 13px;
+	margin: 0;
+}
+
+/* Panel styling adjustments */
+.wpct-editor .components-panel__body-title button {
+	font-size: 13px;
+}
+
+.wpct-editor .components-base-control {
+	margin-bottom: 16px;
+}
+
+.wpct-editor .components-base-control:last-child {
+	margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+	.wpct-editor__body {
+		flex-direction: column;
+	}
+
+	.wpct-editor__sidebar {
+		width: 100%;
+		border-left: 0;
+		border-top: 1px solid #ddd;
+	}
+}

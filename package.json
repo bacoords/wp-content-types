@@ -1,0 +1,24 @@
+{
+	"name": "wp-content-types",
+	"version": "0.1.0",
+	"description": "A content modeling system for WordPress.",
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"lint:js": "wp-scripts lint-js src/",
+		"lint:css": "wp-scripts lint-style src/"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^28.0.0"
+	},
+	"dependencies": {
+		"@wordpress/api-fetch": "^7.0.0",
+		"@wordpress/components": "^28.0.0",
+		"@wordpress/core-data": "^7.0.0",
+		"@wordpress/dataviews": "^14.1.0",
+		"@wordpress/element": "^6.0.0",
+		"@wordpress/i18n": "^5.0.0",
+		"@wordpress/interface": "^9.29.0",
+		"@wordpress/keyboard-shortcuts": "^5.44.0"
+	}
+}

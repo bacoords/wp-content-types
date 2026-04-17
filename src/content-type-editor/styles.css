@@ -1,0 +1,135 @@
+/**
+ * Content Type Editor Styles
+ *
+ * Custom layout using WordPress components.
+ */
+
+/* Full-screen editor layout */
+.wpct-editor {
+	position: fixed;
+	top: 32px; /* Admin bar */
+	left: 160px; /* Admin menu */
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	background: #fff;
+}
+
+/* Collapsed admin menu */
+.folded .wpct-editor {
+	left: 36px;
+}
+
+/* Mobile adjustments */
+@media screen and (max-width: 782px) {
+	.wpct-editor {
+		top: 46px;
+		left: 0;
+	}
+}
+
+/* Loading and empty states */
+.wpct-editor--loading,
+.wpct-editor--empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Header */
+.wpct-editor__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 16px;
+	height: 60px;
+	border-bottom: 1px solid #ddd;
+	background: #fff;
+	flex-shrink: 0;
+}
+
+.wpct-editor__title {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1e1e1e;
+}
+
+.wpct-editor__header-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.wpct-editor__unsaved {
+	font-size: 12px;
+	color: #cc1818;
+}
+
+/* Body - content + sidebar */
+.wpct-editor__body {
+	display: flex;
+	flex: 1;
+	overflow: hidden;
+}
+
+/* Content area */
+.wpct-editor__content {
+	flex: 1;
+	overflow-y: auto;
+	background: #f0f0f0;
+}
+
+.wpct-editor__content-inner {
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 24px;
+}
+
+.wpct-editor__content .components-panel {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 2px;
+}
+
+/* Sidebar */
+.wpct-editor__sidebar {
+	width: 280px;
+	border-left: 1px solid #ddd;
+	background: #fff;
+	overflow-y: auto;
+	flex-shrink: 0;
+}
+
+.wpct-editor__sidebar .components-panel {
+	border: 0;
+	border-radius: 0;
+}
+
+.wpct-editor__sidebar-info {
+	color: #757575;
+	font-size: 13px;
+	margin: 0;
+}
+
+/* Placeholder text */
+.wpct-editor__placeholder {
+	color: #757575;
+	font-style: italic;
+	margin-bottom: 16px;
+}
+
+/* Responsive: stack on mobile */
+@media screen and (max-width: 782px) {
+	.wpct-editor__body {
+		flex-direction: column;
+	}
+
+	.wpct-editor__sidebar {
+		width: 100%;
+		border-left: 0;
+		border-top: 1px solid #ddd;
+		max-height: 300px;
+	}
+}
