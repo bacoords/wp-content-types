@@ -80,7 +80,107 @@ class WPCT_Post_Type_Registrar {
 
 		$args = self::build_args( $content_type );
 
-		return register_post_type( $slug, $args );
+		$result = register_post_type( $slug, $args );
+
+		// Register post meta for all fields.
+		if ( ! is_wp_error( $result ) ) {
+			self::register_fields_meta( $slug, $content_type );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Register post meta for all fields in a content type.
+	 *
+	 * @param string $post_type    Post type slug.
+	 * @param array  $content_type Content type data.
+	 */
+	private static function register_fields_meta( $post_type, $content_type ) {
+		$config = $content_type['config'] ?? array();
+		$fields = self::collect_all_fields( $config );
+
+		foreach ( $fields as $field ) {
+			$meta_key = $field['key'] ?? '';
+
+			if ( empty( $meta_key ) ) {
+				continue;
+			}
+
+			$schema = self::get_field_schema( $field );
+
+			register_post_meta(
+				$post_type,
+				$meta_key,
+				array(
+					'show_in_rest'      => true,
+					'single'            => true,
+					'type'              => $schema['type'],
+					'default'           => $schema['default'] ?? '',
+					'label'             => $field['label'] ?? '',
+					'description'       => $field['description'] ?? '',
+					'revisions_enabled' => true,
+					'auth_callback'     => function () {
+						return current_user_can( 'edit_posts' );
+					},
+				)
+			);
+		}
+	}
+
+	/**
+	 * Collect all fields from a content type config.
+	 *
+	 * Handles both top-level 'fields' array and 'field_groups' with nested fields.
+	 *
+	 * @param array $config Content type config.
+	 * @return array All fields.
+	 */
+	private static function collect_all_fields( $config ) {
+		$fields = array();
+
+		// Check for top-level fields array.
+		if ( ! empty( $config['fields'] ) && is_array( $config['fields'] ) ) {
+			$fields = array_merge( $fields, $config['fields'] );
+		}
+
+		// Check for field_groups with nested fields.
+		if ( ! empty( $config['field_groups'] ) && is_array( $config['field_groups'] ) ) {
+			foreach ( $config['field_groups'] as $group ) {
+				if ( ! empty( $group['fields'] ) && is_array( $group['fields'] ) ) {
+					$fields = array_merge( $fields, $group['fields'] );
+				}
+			}
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * Get the schema for a field based on its type.
+	 *
+	 * @param array $field Field data.
+	 * @return array Schema with 'type' and optionally 'default'.
+	 */
+	private static function get_field_schema( $field ) {
+		$type = $field['type'] ?? 'text';
+
+		// Map field types to WordPress meta types.
+		$type_map = array(
+			'text'     => array( 'type' => 'string', 'default' => '' ),
+			'textarea' => array( 'type' => 'string', 'default' => '' ),
+			'number'   => array( 'type' => 'number', 'default' => 0 ),
+			'integer'  => array( 'type' => 'integer', 'default' => 0 ),
+			'boolean'  => array( 'type' => 'boolean', 'default' => false ),
+			'checkbox' => array( 'type' => 'boolean', 'default' => false ),
+			'select'   => array( 'type' => 'string', 'default' => '' ),
+			'email'    => array( 'type' => 'string', 'default' => '' ),
+			'url'      => array( 'type' => 'string', 'default' => '' ),
+			'date'     => array( 'type' => 'string', 'default' => '' ),
+			'image'    => array( 'type' => 'integer', 'default' => 0 ),
+		);
+
+		return $type_map[ $type ] ?? array( 'type' => 'string', 'default' => '' );
 	}
 
 	/**
@@ -124,6 +224,12 @@ class WPCT_Post_Type_Registrar {
 
 		// Default supports.
 		$supports = $config['supports'] ?? array( 'title', 'editor', 'thumbnail' );
+		if ( ! in_array( 'custom-fields', $supports, true ) ) {
+			$supports[] = 'custom-fields';
+		}
+		if ( ! in_array( 'revisions', $supports, true ) ) {
+			$supports[] = 'revisions';
+		}
 
 		// Visibility & Access settings.
 		$public              = $config['public'] ?? true;
