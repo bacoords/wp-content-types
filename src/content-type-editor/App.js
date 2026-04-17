@@ -20,9 +20,12 @@ import { Icon, chevronRight } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useMemo } from '@wordpress/element';
 import FieldsList from './components/fields/FieldsList';
+import FieldEditorPanel from './components/fields/FieldEditorPanel';
+import GroupEditorPanel from './components/fields/GroupEditorPanel';
 import { getSettingsFields, getAdvancedFields } from './fields';
 import { SETTINGS_FORM, getAdvancedForm } from './forms';
 import { useFormData } from './hooks/useFormData';
+import { useFieldsManager } from './hooks/useFieldsManager';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
 
@@ -70,7 +73,39 @@ function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
 	);
 }
 
-function EditorSidebar() {
+function EditorSidebar( { fieldsManager, fieldGroups } ) {
+	const { selection, selectedData, updateField, deleteField, updateGroup, deleteGroup, clearSelection } = fieldsManager;
+
+	// Render field editor panel
+	if ( selection?.type === 'field' && selectedData ) {
+		return (
+			<div className="wpct-editor__sidebar">
+				<FieldEditorPanel
+					field={ selectedData }
+					groupId={ selection.groupId }
+					onUpdate={ updateField }
+					onDelete={ deleteField }
+					onClose={ clearSelection }
+				/>
+			</div>
+		);
+	}
+
+	// Render group editor panel
+	if ( selection?.type === 'group' && selectedData ) {
+		return (
+			<div className="wpct-editor__sidebar">
+				<GroupEditorPanel
+					group={ selectedData }
+					onUpdate={ updateGroup }
+					onDelete={ deleteGroup }
+					onClose={ clearSelection }
+				/>
+			</div>
+		);
+	}
+
+	// Default sidebar content
 	return (
 		<div className="wpct-editor__sidebar">
 			<Panel>
@@ -82,10 +117,19 @@ function EditorSidebar() {
 	);
 }
 
-function FieldsTab( { fieldGroups } ) {
+function FieldsTab( { fieldGroups, fieldsManager } ) {
+	const { selection, selectGroup, selectField, addField, addGroup } = fieldsManager;
+
 	return (
 		<div className="wpct-editor__tab-content">
-			<FieldsList fieldGroups={ fieldGroups } />
+			<FieldsList
+				fieldGroups={ fieldGroups }
+				selection={ selection }
+				onSelectGroup={ selectGroup }
+				onSelectField={ selectField }
+				onAddField={ addField }
+				onAddGroup={ addGroup }
+			/>
 		</div>
 	);
 }
@@ -178,7 +222,7 @@ function AdvancedTab( { record, editedRecord, edit, config, updateConfig } ) {
 	);
 }
 
-function EditorContent( { record, editedRecord, edit, config, updateConfig } ) {
+function EditorContent( { record, editedRecord, edit, config, updateConfig, fieldsManager } ) {
 	const tabs = [
 		{ name: 'fields', title: __( 'Fields', 'wp-content-types' ) },
 		{ name: 'settings', title: __( 'Settings', 'wp-content-types' ) },
@@ -192,7 +236,12 @@ function EditorContent( { record, editedRecord, edit, config, updateConfig } ) {
 				<TabPanel tabs={ tabs }>
 					{ ( tab ) => {
 						if ( tab.name === 'fields' ) {
-							return <FieldsTab fieldGroups={ config.field_groups } />;
+							return (
+								<FieldsTab
+									fieldGroups={ config.field_groups }
+									fieldsManager={ fieldsManager }
+								/>
+							);
 						}
 						if ( tab.name === 'settings' ) {
 							return (
@@ -254,6 +303,9 @@ export default function App() {
 		[ edit, editedConfig ]
 	);
 
+	// Initialize fields manager hook
+	const fieldsManager = useFieldsManager( { config, updateConfig } );
+
 	const handleSave = async () => {
 		await save();
 	};
@@ -297,8 +349,12 @@ export default function App() {
 						edit={ edit }
 						config={ config }
 						updateConfig={ updateConfig }
+						fieldsManager={ fieldsManager }
 					/>
-					<EditorSidebar />
+					<EditorSidebar
+						fieldsManager={ fieldsManager }
+						fieldGroups={ config.field_groups }
+					/>
 				</div>
 			</div>
 			<Popover.Slot />

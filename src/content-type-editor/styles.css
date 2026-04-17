@@ -230,6 +230,22 @@ body.is-fullscreen-mode #wpfooter {
 	padding: 16px;
 	background: #f6f7f7;
 	border-radius: 4px;
+	cursor: pointer;
+	transition: background 0.1s, border-color 0.1s;
+	border: 2px solid transparent;
+}
+
+.wpct-field-item:hover {
+	background: #f0f0f0;
+}
+
+.wpct-field-item--selected {
+	border: 2px solid var(--wp-admin-theme-color, #007cba);
+	background: rgba(0, 124, 186, 0.04);
+}
+
+.wpct-field-item--selected:hover {
+	background: rgba(0, 124, 186, 0.08);
 }
 
 .wpct-field-item__header {
@@ -301,6 +317,79 @@ body.is-fullscreen-mode #wpfooter {
 	border-radius: 2px;
 	color: #d63638;
 	font-size: 12px;
+}
+
+/* Field Group Card - Clickable Header */
+.wpct-field-group-card__header-wrapper {
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.wpct-field-group-card__header-wrapper:hover {
+	background: #f6f7f7;
+}
+
+.wpct-field-group-card--selected .wpct-field-group-card__header-wrapper {
+	background: rgba(0, 124, 186, 0.04);
+	border-left: 3px solid var(--wp-admin-theme-color, #007cba);
+}
+
+/* Add Field Button */
+.wpct-field-group-card__add-field {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+}
+
+/* Add Group Button */
+.wpct-fields-list__add-group {
+	margin-top: 16px;
+	display: flex;
+	justify-content: center;
+}
+
+/* Field Editor Panel */
+.wpct-field-editor-panel {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.wpct-field-editor-panel__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16px;
+	border-bottom: 1px solid #ddd;
+	flex-shrink: 0;
+}
+
+.wpct-field-editor-panel__header h4 {
+	margin: 0;
+}
+
+.wpct-field-editor-panel__content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 16px;
+}
+
+.wpct-field-editor-panel__content .dataforms-layouts__wrapper {
+	width: 100%;
+}
+
+.wpct-field-editor-panel__content .components-card {
+	margin-bottom: 16px;
+}
+
+.wpct-field-editor-panel__content .components-card:last-child {
+	margin-bottom: 0;
+}
+
+.wpct-field-editor-panel__delete {
+	padding: 16px;
+	border-top: 1px solid #ddd;
+	flex-shrink: 0;
 }
 
 /* Responsive */

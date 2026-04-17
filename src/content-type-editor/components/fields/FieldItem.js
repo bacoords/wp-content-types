@@ -2,20 +2,9 @@
  * Field Item Component
  *
  * Displays a single field with its label, type badge, required status,
- * preview, and description.
+ * and description.
  */
 import { __ } from '@wordpress/i18n';
-import {
-	TextFieldPreview,
-	TextareaFieldPreview,
-	NumberFieldPreview,
-	EmailFieldPreview,
-	UrlFieldPreview,
-	DateFieldPreview,
-	SelectFieldPreview,
-	RadioFieldPreview,
-	CheckboxFieldPreview,
-} from './field-previews';
 
 const FIELD_TYPE_LABELS = {
 	text: __( 'text', 'wp-content-types' ),
@@ -29,42 +18,36 @@ const FIELD_TYPE_LABELS = {
 	checkbox: __( 'checkbox', 'wp-content-types' ),
 };
 
-function getFieldPreview( field ) {
-	switch ( field.type ) {
-		case 'text':
-			return <TextFieldPreview field={ field } />;
-		case 'textarea':
-			return <TextareaFieldPreview field={ field } />;
-		case 'number':
-			return <NumberFieldPreview field={ field } />;
-		case 'email':
-			return <EmailFieldPreview field={ field } />;
-		case 'url':
-			return <UrlFieldPreview field={ field } />;
-		case 'date':
-			return <DateFieldPreview field={ field } />;
-		case 'select':
-			return <SelectFieldPreview field={ field } />;
-		case 'radio':
-			return <RadioFieldPreview field={ field } />;
-		case 'checkbox':
-			return <CheckboxFieldPreview field={ field } />;
-		default:
-			return (
-				<div className="wpct-field-item__unknown">
-					{ __( 'Unknown field type', 'wp-content-types' ) }
-				</div>
-			);
-	}
-}
-
-export default function FieldItem( { field } ) {
+export default function FieldItem( { field, isSelected, onClick } ) {
 	const typeLabel = FIELD_TYPE_LABELS[ field.type ] || field.type;
 	const isRequired = field.required === true;
-	const isCheckbox = field.type === 'checkbox';
+
+	const handleClick = ( event ) => {
+		event.stopPropagation();
+		if ( onClick ) {
+			onClick();
+		}
+	};
+
+	const className = [
+		'wpct-field-item',
+		isSelected && 'wpct-field-item--selected',
+	]
+		.filter( Boolean )
+		.join( ' ' );
 
 	return (
-		<div className="wpct-field-item">
+		<div
+			className={ className }
+			onClick={ handleClick }
+			onKeyDown={ ( event ) => {
+				if ( event.key === 'Enter' || event.key === ' ' ) {
+					handleClick( event );
+				}
+			} }
+			role="button"
+			tabIndex={ 0 }
+		>
 			<div className="wpct-field-item__header">
 				<span className="wpct-field-item__label">
 					{ field.label }
@@ -79,16 +62,6 @@ export default function FieldItem( { field } ) {
 					}
 				</span>
 			</div>
-			{ ! isCheckbox && (
-				<div className="wpct-field-item__preview">
-					{ getFieldPreview( field ) }
-				</div>
-			) }
-			{ isCheckbox && (
-				<div className="wpct-field-item__preview wpct-field-item__preview--checkbox">
-					{ getFieldPreview( field ) }
-				</div>
-			) }
 			{ field.description && (
 				<div className="wpct-field-item__description">
 					{ field.description }
