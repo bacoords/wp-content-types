@@ -17,6 +17,7 @@ import {
 	useState,
 } from '@wordpress/element';
 import { DataForm } from '@wordpress/dataviews';
+import { TextareaControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -28,7 +29,7 @@ import { __ } from '@wordpress/i18n';
 function mapFieldType( type ) {
 	const typeMap = {
 		text: 'text',
-		textarea: 'textarea',
+		textarea: 'text', // textarea uses 'text' type with custom Edit component
 		number: 'integer',
 		email: 'text',
 		url: 'text',
@@ -39,6 +40,27 @@ function mapFieldType( type ) {
 	};
 
 	return typeMap[ type ] || 'text';
+}
+
+/**
+ * Create a textarea Edit component for DataForm.
+ *
+ * @param {string} fieldKey The field key.
+ * @param {string} label    The field label.
+ * @return {Function} Edit component.
+ */
+function createTextareaEdit( fieldKey, label ) {
+	return function TextareaEdit( { data, onChange } ) {
+		return (
+			<TextareaControl
+				__nextHasNoMarginBottom
+				label={ label }
+				value={ data[ fieldKey ] || '' }
+				onChange={ ( value ) => onChange( { [ fieldKey ]: value } ) }
+				rows={ 4 }
+			/>
+		);
+	};
 }
 
 /**
@@ -61,6 +83,22 @@ function buildDataFormFields( fields ) {
 
 		if ( field.placeholder ) {
 			dataFormField.placeholder = field.placeholder;
+		}
+
+		// Textarea fields need a custom Edit component
+		if ( field.type === 'textarea' ) {
+			dataFormField.Edit = createTextareaEdit(
+				field.key,
+				field.label || field.key
+			);
+		}
+
+		// Date fields use compact datetime control
+		if ( field.type === 'date' ) {
+			dataFormField.Edit = {
+				compact: true,
+				control: 'datetime',
+			};
 		}
 
 		if (
