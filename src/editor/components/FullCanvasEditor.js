@@ -5,10 +5,17 @@
  * Uses a React Portal to render into the editor content area.
  */
 
-import { createPortal } from 'react-dom';
+/* global MutationObserver */
+
 import { useEntityProp } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
-import { useMemo, useCallback, useEffect, useState } from '@wordpress/element';
+import {
+	createPortal,
+	useMemo,
+	useCallback,
+	useEffect,
+	useState,
+} from '@wordpress/element';
 import { DataForm } from '@wordpress/dataviews';
 import { __ } from '@wordpress/i18n';
 
@@ -70,19 +77,6 @@ function buildDataFormFields( fields ) {
 	} );
 }
 
-/**
- * Build DataForm form layout from content type fields.
- *
- * @param {Array} fields The content type fields.
- * @return {Object} DataForm form layout.
- */
-function buildFormLayout( fields ) {
-	return {
-		type: 'regular',
-		fields: fields.map( ( field ) => field.key ),
-	};
-}
-
 export default function FullCanvasEditor() {
 	const contentType = window.wpctEditorSettings?.contentType;
 	const [ portalContainer, setPortalContainer ] = useState( null );
@@ -92,38 +86,91 @@ export default function FullCanvasEditor() {
 		[ contentType ]
 	);
 
+	// Check if the content type supports title.
+	const supportsTitle = useMemo( () => {
+		const supports = contentType?.config?.supports || [
+			'title',
+			'editor',
+			'thumbnail',
+			'custom-fields',
+		];
+		return supports.includes( 'title' );
+	}, [ contentType ] );
+
 	const postType = useSelect( ( select ) => {
 		return select( 'core/editor' ).getCurrentPostType();
 	}, [] );
 
 	const [ meta, setMeta ] = useEntityProp( 'postType', postType, 'meta' );
+	const [ title, setTitle ] = useEntityProp( 'postType', postType, 'title' );
 
 	const formData = useMemo( () => {
 		const data = {};
+
+		// Add title to form data if supported.
+		if ( supportsTitle ) {
+			data._title = title || '';
+		}
+
 		contentTypeFields.forEach( ( field ) => {
 			data[ field.key ] = meta?.[ field.key ] ?? '';
 		} );
 		return data;
-	}, [ meta, contentTypeFields ] );
+	}, [ meta, contentTypeFields, supportsTitle, title ] );
 
-	const dataFormFields = useMemo(
-		() => buildDataFormFields( contentTypeFields ),
-		[ contentTypeFields ]
-	);
+	const dataFormFields = useMemo( () => {
+		const fields = [];
 
-	const formLayout = useMemo(
-		() => buildFormLayout( contentTypeFields ),
-		[ contentTypeFields ]
-	);
+		// Add title field at the top if supported.
+		if ( supportsTitle ) {
+			fields.push( {
+				id: '_title',
+				label: __( 'Title', 'wp-content-types' ),
+				type: 'text',
+			} );
+		}
+
+		fields.push( ...buildDataFormFields( contentTypeFields ) );
+		return fields;
+	}, [ contentTypeFields, supportsTitle ] );
+
+	const formLayout = useMemo( () => {
+		const fieldIds = [];
+
+		// Add title to layout if supported.
+		if ( supportsTitle ) {
+			fieldIds.push( '_title' );
+		}
+
+		fieldIds.push( ...contentTypeFields.map( ( field ) => field.key ) );
+
+		return {
+			type: 'regular',
+			fields: fieldIds,
+		};
+	}, [ contentTypeFields, supportsTitle ] );
 
 	const handleChange = useCallback(
 		( edits ) => {
-			setMeta( {
-				...meta,
-				...edits,
-			} );
+			// Handle title changes separately.
+			if ( '_title' in edits ) {
+				setTitle( edits._title );
+				// Remove title from edits before updating meta.
+				const { _title, ...metaEdits } = edits;
+				if ( Object.keys( metaEdits ).length > 0 ) {
+					setMeta( {
+						...meta,
+						...metaEdits,
+					} );
+				}
+			} else {
+				setMeta( {
+					...meta,
+					...edits,
+				} );
+			}
 		},
-		[ meta, setMeta ]
+		[ meta, setMeta, setTitle ]
 	);
 
 	// Find and set up the portal container
