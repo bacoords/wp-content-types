@@ -48,4 +48,8 @@ export const SUPPORT_FIELDS = [
  * Support features that are always enabled and not shown in UI.
  * These are required for the block editor and core functionality.
  */
-export const ALWAYS_ENABLED_SUPPORTS = [ 'editor', 'custom-fields', 'revisions' ];
+export const ALWAYS_ENABLED_SUPPORTS = [
+	'editor',
+	'custom-fields',
+	'revisions',
+];

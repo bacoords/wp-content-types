@@ -40,7 +40,10 @@ const settingsFields = [
 		id: 'slug',
 		label: __( 'Slug', 'wp-content-types' ),
 		type: 'text',
-		description: __( 'Warning: changing the slug will remove any existing content you\'ve already added.', 'wp-content-types' ),
+		description: __(
+			"Warning: changing the slug will remove any existing content you've already added.",
+			'wp-content-types'
+		),
 	},
 	{
 		id: 'public',
@@ -70,11 +73,11 @@ const settingsForm = {
 /**
  * Content Type Settings Modal Component.
  *
- * @param {Object}   props              Component props.
- * @param {boolean}  props.isOpen       Whether the modal is open.
- * @param {Function} props.onClose      Callback when modal closes.
- * @param {Object}   props.contentType  Existing content type data (null for new).
- * @param {Function} props.onSave       Callback after successful save.
+ * @param {Object}   props             Component props.
+ * @param {boolean}  props.isOpen      Whether the modal is open.
+ * @param {Function} props.onClose     Callback when modal closes.
+ * @param {Object}   props.contentType Existing content type data (null for new).
+ * @param {Function} props.onSave      Callback after successful save.
  */
 export default function ContentTypeSettingsModal( {
 	isOpen,

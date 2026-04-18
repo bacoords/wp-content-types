@@ -3,7 +3,7 @@
  *
  * Block editor screen for editing posts of custom content types.
  */
-import { useState } from '@wordpress/element';
+import { useState, useRef, useEffect } from '@wordpress/element';
 import {
 	Button,
 	Panel,
@@ -21,6 +21,11 @@ import { __ } from '@wordpress/i18n';
 
 /**
  * Editor Header component
+ * @param root0
+ * @param root0.title
+ * @param root0.isSaving
+ * @param root0.hasEdits
+ * @param root0.onSave
  */
 function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
 	return (
@@ -76,9 +81,24 @@ function EditorSidebar() {
 							label={ __( 'Status', 'wp-content-types' ) }
 							value={ status }
 							options={ [
-								{ label: __( 'Draft', 'wp-content-types' ), value: 'draft' },
-								{ label: __( 'Published', 'wp-content-types' ), value: 'publish' },
-								{ label: __( 'Pending Review', 'wp-content-types' ), value: 'pending' },
+								{
+									label: __( 'Draft', 'wp-content-types' ),
+									value: 'draft',
+								},
+								{
+									label: __(
+										'Published',
+										'wp-content-types'
+									),
+									value: 'publish',
+								},
+								{
+									label: __(
+										'Pending Review',
+										'wp-content-types'
+									),
+									value: 'pending',
+								},
 							] }
 							onChange={ setStatus }
 						/>
@@ -90,7 +110,10 @@ function EditorSidebar() {
 				>
 					<PanelRow>
 						<p className="wpct-editor__sidebar-info">
-							{ __( 'Post metadata will appear here.', 'wp-content-types' ) }
+							{ __(
+								'Post metadata will appear here.',
+								'wp-content-types'
+							) }
 						</p>
 					</PanelRow>
 				</PanelBody>
@@ -101,6 +124,8 @@ function EditorSidebar() {
 
 /**
  * Editor Canvas component - the main content area with fields
+ * @param root0
+ * @param root0.onEdit
  */
 function EditorCanvas( { onEdit } ) {
 	const [ title, setTitle ] = useState( '' );
@@ -118,7 +143,10 @@ function EditorCanvas( { onEdit } ) {
 		<div className="wpct-editor__canvas">
 			<div className="wpct-editor__canvas-inner">
 				<Notice status="info" isDismissible={ false }>
-					{ __( 'This is a prototype. Fields shown are examples for a "Book" content type.', 'wp-content-types' ) }
+					{ __(
+						'This is a prototype. Fields shown are examples for a "Book" content type.',
+						'wp-content-types'
+					) }
 				</Notice>
 
 				<Panel>
@@ -130,26 +158,38 @@ function EditorCanvas( { onEdit } ) {
 							label={ __( 'Title', 'wp-content-types' ) }
 							value={ title }
 							onChange={ handleChange( setTitle ) }
-							placeholder={ __( 'Enter book title…', 'wp-content-types' ) }
+							placeholder={ __(
+								'Enter book title…',
+								'wp-content-types'
+							) }
 						/>
 						<TextControl
 							label={ __( 'Author', 'wp-content-types' ) }
 							value={ author }
 							onChange={ handleChange( setAuthor ) }
-							placeholder={ __( 'Enter author name…', 'wp-content-types' ) }
+							placeholder={ __(
+								'Enter author name…',
+								'wp-content-types'
+							) }
 						/>
 						<TextControl
 							label={ __( 'Year Published', 'wp-content-types' ) }
 							value={ year }
 							onChange={ handleChange( setYear ) }
 							type="number"
-							placeholder={ __( 'e.g. 2024', 'wp-content-types' ) }
+							placeholder={ __(
+								'e.g. 2024',
+								'wp-content-types'
+							) }
 						/>
 						<TextControl
 							label={ __( 'ISBN', 'wp-content-types' ) }
 							value={ isbn }
 							onChange={ handleChange( setIsbn ) }
-							placeholder={ __( 'e.g. 978-3-16-148410-0', 'wp-content-types' ) }
+							placeholder={ __(
+								'e.g. 978-3-16-148410-0',
+								'wp-content-types'
+							) }
 						/>
 					</PanelBody>
 					<PanelBody
@@ -160,7 +200,10 @@ function EditorCanvas( { onEdit } ) {
 							label={ __( 'Book Summary', 'wp-content-types' ) }
 							value={ summary }
 							onChange={ handleChange( setSummary ) }
-							placeholder={ __( 'Write a brief summary of the book…', 'wp-content-types' ) }
+							placeholder={ __(
+								'Write a brief summary of the book…',
+								'wp-content-types'
+							) }
 							rows={ 6 }
 						/>
 					</PanelBody>
@@ -176,11 +219,25 @@ function EditorCanvas( { onEdit } ) {
 export default function App() {
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ hasEdits, setHasEdits ] = useState( false );
+	const saveTimeoutRef = useRef( null );
+
+	// Clear timeout on unmount to prevent memory leak
+	useEffect( () => {
+		return () => {
+			if ( saveTimeoutRef.current ) {
+				clearTimeout( saveTimeoutRef.current );
+			}
+		};
+	}, [] );
 
 	const handleSave = () => {
 		setIsSaving( true );
+		// Clear any existing timeout before setting a new one
+		if ( saveTimeoutRef.current ) {
+			clearTimeout( saveTimeoutRef.current );
+		}
 		// Simulate save
-		setTimeout( () => {
+		saveTimeoutRef.current = setTimeout( () => {
 			setIsSaving( false );
 			setHasEdits( false );
 		}, 1000 );

@@ -4,15 +4,22 @@
  * Custom hook managing selection and CRUD operations for flat fields array.
  * Uses internal _id for stable selection tracking, separate from user-editable key.
  */
-import { useState, useCallback, useMemo, useRef } from '@wordpress/element';
+import {
+	useState,
+	useCallback,
+	useMemo,
+	useRef,
+	useEffect,
+} from '@wordpress/element';
 
 /**
  * Generate a unique ID for internal tracking.
+ * Uses timestamp + random string for uniqueness without global state.
  */
-let idCounter = 0;
 function generateId() {
-	idCounter += 1;
-	return `_${ Date.now() }_${ idCounter }`;
+	return `_${ Date.now() }_${ Math.random()
+		.toString( 36 )
+		.substring( 2, 9 ) }`;
 }
 
 /**
@@ -104,7 +111,7 @@ function migrateFieldGroups( config ) {
 		groupFields.forEach( ( field, fieldIndex ) => {
 			migratedFields.push( {
 				...field,
-				position: ( groupIndex * 1000 ) + ( fieldIndex * 10 ),
+				position: groupIndex * 1000 + fieldIndex * 10,
 			} );
 		} );
 	} );
@@ -135,7 +142,10 @@ export function useFieldsManager( { config, updateConfig } ) {
 		}
 
 		// Migrate from field_groups if present
-		if ( Array.isArray( config.field_groups ) && config.field_groups.length > 0 ) {
+		if (
+			Array.isArray( config.field_groups ) &&
+			config.field_groups.length > 0
+		) {
 			const migrated = migrateFieldGroups( config );
 			return ensureIds( migrated );
 		}
@@ -144,10 +154,18 @@ export function useFieldsManager( { config, updateConfig } ) {
 	}, [ config.fields, config.field_groups ] );
 
 	// Initialize IDs and migrate on first render if needed
-	if ( ! initializedRef.current && fields.length > 0 ) {
+	// Using useEffect to avoid state updates during render phase
+	useEffect( () => {
+		if ( initializedRef.current || fields.length === 0 ) {
+			return;
+		}
+
 		const originalFields = config.fields || [];
-		const hasFieldGroups = Array.isArray( config.field_groups ) && config.field_groups.length > 0;
-		const needsUpdate = hasFieldGroups || originalFields.some( ( f ) => ! f._id );
+		const hasFieldGroups =
+			Array.isArray( config.field_groups ) &&
+			config.field_groups.length > 0;
+		const needsUpdate =
+			hasFieldGroups || originalFields.some( ( f ) => ! f._id );
 
 		if ( needsUpdate ) {
 			initializedRef.current = true;
@@ -159,7 +177,7 @@ export function useFieldsManager( { config, updateConfig } ) {
 		} else {
 			initializedRef.current = true;
 		}
-	}
+	}, [ fields, config.fields, config.field_groups, updateConfig ] );
 
 	// Sort fields by position
 	const sortedFields = useMemo( () => {
@@ -242,61 +260,13 @@ export function useFieldsManager( { config, updateConfig } ) {
 	 *
 	 * @param {Object} fieldData Optional field data to use instead of defaults.
 	 */
-	const addField = useCallback( ( fieldData = {} ) => {
-		// Calculate max position
-		const maxPosition = fields.reduce(
-			( max, f ) => Math.max( max, f.position || 0 ),
-			0
-		);
-
-		// Generate key from label if provided, otherwise use provided key or default
-		let fieldKey = fieldData.key;
-		if ( ! fieldKey && fieldData.label ) {
-			fieldKey = generateKey( fieldData.label );
-		}
-		if ( ! fieldKey ) {
-			fieldKey = 'new_field';
-		}
-
-		const newField = {
-			_id: generateId(),
-			key: makeUniqueKey( fieldKey, fields ),
-			label: fieldData.label || 'New Field',
-			type: fieldData.type || 'text',
-			required: fieldData.required || false,
-			position: maxPosition + 10,
-			...( fieldData.config && { config: fieldData.config } ),
-		};
-
-		updateFields( [ ...fields, newField ] );
-		setSelectedFieldId( newField._id );
-
-		return newField;
-	}, [ fields, updateFields ] );
-
-	/**
-	 * Add multiple fields at once.
-	 *
-	 * @param {Array} fieldsData Array of field data objects.
-	 * @return {Array} Array of created fields.
-	 */
-	const addFields = useCallback( ( fieldsData = [] ) => {
-		if ( ! Array.isArray( fieldsData ) || fieldsData.length === 0 ) {
-			return [];
-		}
-
-		// Calculate starting position
-		let currentPosition = fields.reduce(
-			( max, f ) => Math.max( max, f.position || 0 ),
-			0
-		);
-
-		// Track all fields (existing + new) for unique key generation
-		const allFields = [ ...fields ];
-		const newFields = [];
-
-		for ( const fieldData of fieldsData ) {
-			currentPosition += 10;
+	const addField = useCallback(
+		( fieldData = {} ) => {
+			// Calculate max position
+			const maxPosition = fields.reduce(
+				( max, f ) => Math.max( max, f.position || 0 ),
+				0
+			);
 
 			// Generate key from label if provided, otherwise use provided key or default
 			let fieldKey = fieldData.key;
@@ -309,27 +279,81 @@ export function useFieldsManager( { config, updateConfig } ) {
 
 			const newField = {
 				_id: generateId(),
-				key: makeUniqueKey( fieldKey, allFields ),
+				key: makeUniqueKey( fieldKey, fields ),
 				label: fieldData.label || 'New Field',
 				type: fieldData.type || 'text',
 				required: fieldData.required || false,
-				position: currentPosition,
+				position: maxPosition + 10,
 				...( fieldData.config && { config: fieldData.config } ),
 			};
 
-			allFields.push( newField );
-			newFields.push( newField );
-		}
+			updateFields( [ ...fields, newField ] );
+			setSelectedFieldId( newField._id );
 
-		updateFields( allFields );
+			return newField;
+		},
+		[ fields, updateFields ]
+	);
 
-		// Select the last added field
-		if ( newFields.length > 0 ) {
-			setSelectedFieldId( newFields[ newFields.length - 1 ]._id );
-		}
+	/**
+	 * Add multiple fields at once.
+	 *
+	 * @param {Array} fieldsData Array of field data objects.
+	 * @return {Array} Array of created fields.
+	 */
+	const addFields = useCallback(
+		( fieldsData = [] ) => {
+			if ( ! Array.isArray( fieldsData ) || fieldsData.length === 0 ) {
+				return [];
+			}
 
-		return newFields;
-	}, [ fields, updateFields ] );
+			// Calculate starting position
+			let currentPosition = fields.reduce(
+				( max, f ) => Math.max( max, f.position || 0 ),
+				0
+			);
+
+			// Track all fields (existing + new) for unique key generation
+			const allFields = [ ...fields ];
+			const newFields = [];
+
+			for ( const fieldData of fieldsData ) {
+				currentPosition += 10;
+
+				// Generate key from label if provided, otherwise use provided key or default
+				let fieldKey = fieldData.key;
+				if ( ! fieldKey && fieldData.label ) {
+					fieldKey = generateKey( fieldData.label );
+				}
+				if ( ! fieldKey ) {
+					fieldKey = 'new_field';
+				}
+
+				const newField = {
+					_id: generateId(),
+					key: makeUniqueKey( fieldKey, allFields ),
+					label: fieldData.label || 'New Field',
+					type: fieldData.type || 'text',
+					required: fieldData.required || false,
+					position: currentPosition,
+					...( fieldData.config && { config: fieldData.config } ),
+				};
+
+				allFields.push( newField );
+				newFields.push( newField );
+			}
+
+			updateFields( allFields );
+
+			// Select the last added field
+			if ( newFields.length > 0 ) {
+				setSelectedFieldId( newFields[ newFields.length - 1 ]._id );
+			}
+
+			return newFields;
+		},
+		[ fields, updateFields ]
+	);
 
 	/**
 	 * Delete a field by _id.

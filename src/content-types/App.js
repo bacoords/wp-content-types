@@ -19,7 +19,10 @@ import Badge from '../components/Badge';
 
 function getEditUrl( item ) {
 	// For hardcoded types without a database ID, use slug.
-	const identifier = item.id && ! String( item.id ).startsWith( 'hardcoded-' ) ? item.id : item.slug;
+	const identifier =
+		item.id && ! String( item.id ).startsWith( 'hardcoded-' )
+			? item.id
+			: item.slug;
 	return `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ identifier }`;
 }
 
@@ -70,16 +73,31 @@ const fields = [
 		render: ( { item } ) => {
 			const isEditable = item.source === 'database';
 			return (
-				<Badge intent={ isEditable ? 'success' : 'default' } icon={ item.source === 'hardcoded' ? lock : null }>
+				<Badge
+					intent={ isEditable ? 'success' : 'default' }
+					icon={ item.source === 'hardcoded' ? lock : null }
+				>
 					{ getSourceLabel( item.source, item.slug ) }
 				</Badge>
 			);
 		},
 		elements: [
-			{ value: __( 'Core', 'wp-content-types' ), label: __( 'Core', 'wp-content-types' ) },
-			{ value: __( 'Code', 'wp-content-types' ), label: __( 'Code', 'wp-content-types' ) },
-			{ value: __( 'Extended', 'wp-content-types' ), label: __( 'Extended', 'wp-content-types' ) },
-			{ value: __( 'Custom', 'wp-content-types' ), label: __( 'Custom', 'wp-content-types' ) },
+			{
+				value: __( 'Core', 'wp-content-types' ),
+				label: __( 'Core', 'wp-content-types' ),
+			},
+			{
+				value: __( 'Code', 'wp-content-types' ),
+				label: __( 'Code', 'wp-content-types' ),
+			},
+			{
+				value: __( 'Extended', 'wp-content-types' ),
+				label: __( 'Extended', 'wp-content-types' ),
+			},
+			{
+				value: __( 'Custom', 'wp-content-types' ),
+				label: __( 'Custom', 'wp-content-types' ),
+			},
 		],
 	},
 	{
@@ -87,19 +105,29 @@ const fields = [
 		label: __( 'Visibility', 'wp-content-types' ),
 		getValue: ( { item } ) => {
 			const isPublic = item.config?.public ?? true;
-			return isPublic ? __( 'Public', 'wp-content-types' ) : __( 'Private', 'wp-content-types' );
+			return isPublic
+				? __( 'Public', 'wp-content-types' )
+				: __( 'Private', 'wp-content-types' );
 		},
 		render: ( { item } ) => {
 			const isPublic = item.config?.public ?? true;
 			return (
 				<Badge intent={ isPublic ? 'success' : 'default' }>
-					{ isPublic ? __( 'Public', 'wp-content-types' ) : __( 'Private', 'wp-content-types' ) }
+					{ isPublic
+						? __( 'Public', 'wp-content-types' )
+						: __( 'Private', 'wp-content-types' ) }
 				</Badge>
 			);
 		},
 		elements: [
-			{ value: __( 'Public', 'wp-content-types' ), label: __( 'Public', 'wp-content-types' ) },
-			{ value: __( 'Private', 'wp-content-types' ), label: __( 'Private', 'wp-content-types' ) },
+			{
+				value: __( 'Public', 'wp-content-types' ),
+				label: __( 'Public', 'wp-content-types' ),
+			},
+			{
+				value: __( 'Private', 'wp-content-types' ),
+				label: __( 'Private', 'wp-content-types' ),
+			},
 		],
 	},
 ];
@@ -130,7 +158,14 @@ const actions = [
 		callback: async ( items ) => {
 			const item = items[ 0 ];
 			// TODO: Implement delete via REST API
-			if ( window.confirm( __( 'Are you sure you want to delete this content type?', 'wp-content-types' ) ) ) {
+			if (
+				window.confirm(
+					__(
+						'Are you sure you want to delete this content type?',
+						'wp-content-types'
+					)
+				)
+			) {
 				try {
 					const response = await window.wp.apiFetch( {
 						path: `/wp/v2/content-types/${ item.id }`,
@@ -162,8 +197,16 @@ function ListSidebar() {
 	return (
 		<div className="wpct-list__sidebar">
 			<Panel>
-				<PanelBody title={ __( 'About', 'wp-content-types' ) } initialOpen={ true }>
-					<p>{ __( 'Create and manage custom content types for your site.', 'wp-content-types' ) }</p>
+				<PanelBody
+					title={ __( 'About', 'wp-content-types' ) }
+					initialOpen={ true }
+				>
+					<p>
+						{ __(
+							'Create and manage custom content types for your site.',
+							'wp-content-types'
+						) }
+					</p>
 				</PanelBody>
 			</Panel>
 		</div>

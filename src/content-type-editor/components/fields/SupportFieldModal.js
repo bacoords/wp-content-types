@@ -6,7 +6,12 @@
 import { Modal, ToggleControl, Button, Icon } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-export default function SupportFieldModal( { field, isEnabled, onToggle, onClose } ) {
+export default function SupportFieldModal( {
+	field,
+	isEnabled,
+	onToggle,
+	onClose,
+} ) {
 	return (
 		<Modal
 			title={ field.label }
@@ -22,7 +27,10 @@ export default function SupportFieldModal( { field, isEnabled, onToggle, onClose
 				</div>
 
 				<p className="wpct-support-field-modal__description">
-					{ __( 'This is a built-in WordPress field. You can enable or disable it for this content type.', 'wp-content-types' ) }
+					{ __(
+						'This is a built-in WordPress field. You can enable or disable it for this content type.',
+						'wp-content-types'
+					) }
 				</p>
 
 				<ToggleControl

@@ -72,9 +72,11 @@ export function useFormData( {
 
 		// Convert supports array to individual boolean fields for DataForm
 		const supports = data.supports || [];
-		Object.entries( SUPPORT_FIELD_MAP ).forEach( ( [ fieldId, supportValue ] ) => {
-			data[ fieldId ] = supports.includes( supportValue );
-		} );
+		Object.entries( SUPPORT_FIELD_MAP ).forEach(
+			( [ fieldId, supportValue ] ) => {
+				data[ fieldId ] = supports.includes( supportValue );
+			}
+		);
 
 		// Remove the supports array from form data (we use individual fields now)
 		delete data.supports;
@@ -95,10 +97,7 @@ export function useFormData( {
 			if ( 'title' in processedEdits ) {
 				const previousAutoSlug = generateSlug( formData.title );
 				// Only auto-update slug if it's empty or matches the previous auto-generated slug
-				if (
-					! formData.slug ||
-					formData.slug === previousAutoSlug
-				) {
+				if ( ! formData.slug || formData.slug === previousAutoSlug ) {
 					processedEdits.slug = generateSlug( processedEdits.title );
 				}
 			}
@@ -121,19 +120,22 @@ export function useFormData( {
 				const newSupports = [ ...currentSupports ];
 
 				// Apply changes from DataForm support fields
-				Object.entries( SUPPORT_FIELD_MAP ).forEach( ( [ fieldId, supportValue ] ) => {
-					// Use the edited value if present, otherwise use current form data
-					const isEnabled = fieldId in processedEdits
-						? processedEdits[ fieldId ]
-						: formData[ fieldId ];
+				Object.entries( SUPPORT_FIELD_MAP ).forEach(
+					( [ fieldId, supportValue ] ) => {
+						// Use the edited value if present, otherwise use current form data
+						const isEnabled =
+							fieldId in processedEdits
+								? processedEdits[ fieldId ]
+								: formData[ fieldId ];
 
-					const index = newSupports.indexOf( supportValue );
-					if ( isEnabled && index === -1 ) {
-						newSupports.push( supportValue );
-					} else if ( ! isEnabled && index !== -1 ) {
-						newSupports.splice( index, 1 );
+						const index = newSupports.indexOf( supportValue );
+						if ( isEnabled && index === -1 ) {
+							newSupports.push( supportValue );
+						} else if ( ! isEnabled && index !== -1 ) {
+							newSupports.splice( index, 1 );
+						}
 					}
-				} );
+				);
 
 				// Ensure always-enabled supports are included
 				ALWAYS_ENABLED_SUPPORTS.forEach( ( s ) => {

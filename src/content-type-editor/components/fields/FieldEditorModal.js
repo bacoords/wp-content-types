@@ -10,7 +10,13 @@ import {
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect, useMemo, useCallback, useRef } from '@wordpress/element';
+import {
+	useState,
+	useEffect,
+	useMemo,
+	useCallback,
+	useRef,
+} from '@wordpress/element';
 import { getFieldEditorFields } from '../../fields/fieldEditorFields';
 import { getFieldEditorForm } from '../../forms/fieldEditorForm';
 
@@ -203,13 +209,21 @@ export default function FieldEditorModal( {
 	// Handle delete
 	const handleDelete = useCallback( () => {
 		// eslint-disable-next-line no-alert
-		if ( window.confirm( __( 'Are you sure you want to delete this field?', 'wp-content-types' ) ) ) {
+		if (
+			window.confirm(
+				__(
+					'Are you sure you want to delete this field?',
+					'wp-content-types'
+				)
+			)
+		) {
 			onDelete( field._id );
 		}
 	}, [ field._id, onDelete ] );
 
 	// Modal title
-	const isNewField = field.label === 'New Field' && field.key?.startsWith( 'new_field' );
+	const isNewField =
+		field.label === 'New Field' && field.key?.startsWith( 'new_field' );
 	const modalTitle = isNewField
 		? __( 'Add Field', 'wp-content-types' )
 		: __( 'Edit Field', 'wp-content-types' );

@@ -5,6 +5,7 @@
  * Version: 0.1.0
  * Author: Brian Coords
  * Text Domain: wp-content-types
+ * Domain Path: /languages
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -17,7 +17,10 @@ import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useMemo, useState } from '@wordpress/element';
 import FieldsDataView from './components/fields/FieldsDataView';
 import { getAdvancedFields } from './fields';
-import { SUPPORT_FIELDS, ALWAYS_ENABLED_SUPPORTS } from './fields/supportFields';
+import {
+	SUPPORT_FIELDS,
+	ALWAYS_ENABLED_SUPPORTS,
+} from './fields/supportFields';
 import { getAdvancedForm } from './forms';
 import { useFormData } from './hooks/useFormData';
 import { useFieldsManager } from './hooks/useFieldsManager';
@@ -56,7 +59,8 @@ function getSourceBadgeLabel( source, slug ) {
 }
 
 function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
-	const listUrl = window.wpctSettings.adminUrl + 'admin.php?page=wp-content-types';
+	const listUrl =
+		window.wpctSettings.adminUrl + 'admin.php?page=wp-content-types';
 	const isReadOnly = source !== 'database';
 
 	return (
@@ -66,10 +70,15 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 					{ __( 'Content Types', 'wp-content-types' ) }
 				</a>
 				<Icon icon={ chevronRight } size={ 16 } />
-				<strong>{ title || __( 'New Content Type', 'wp-content-types' ) }</strong>
+				<strong>
+					{ title || __( 'New Content Type', 'wp-content-types' ) }
+				</strong>
 				{ isReadOnly && (
 					<span style={ { marginLeft: '8px' } }>
-						<Badge intent="default" icon={ source === 'hardcoded' ? lock : null }>
+						<Badge
+							intent="default"
+							icon={ source === 'hardcoded' ? lock : null }
+						>
 							{ getSourceBadgeLabel( source, slug ) }
 						</Badge>
 					</span>
@@ -92,7 +101,16 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 	);
 }
 
-function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formData, isReadOnly, config, title, onSettingsSaved } ) {
+function EditorSidebar( {
+	contentTypeId,
+	contentTypeSlug,
+	fieldsManager,
+	formData,
+	isReadOnly,
+	config,
+	title,
+	onSettingsSaved,
+} ) {
 	const adminUrl = window.wpctSettings?.adminUrl || '/wp-admin/';
 	const theme = window.wpctSettings?.theme || '';
 	const slug = contentTypeSlug;
@@ -105,7 +123,8 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 
 	// Template existence state
 	const [ singleTemplateExists, setSingleTemplateExists ] = useState( null );
-	const [ archiveTemplateExists, setArchiveTemplateExists ] = useState( null );
+	const [ archiveTemplateExists, setArchiveTemplateExists ] =
+		useState( null );
 	const [ isCreatingSingle, setIsCreatingSingle ] = useState( false );
 	const [ isCreatingArchive, setIsCreatingArchive ] = useState( false );
 
@@ -145,8 +164,12 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 	// Create template with default content from fallback template
 	const createTemplate = async ( type ) => {
 		const isArchive = type === 'archive';
-		const setCreating = isArchive ? setIsCreatingArchive : setIsCreatingSingle;
-		const setExists = isArchive ? setArchiveTemplateExists : setSingleTemplateExists;
+		const setCreating = isArchive
+			? setIsCreatingArchive
+			: setIsCreatingSingle;
+		const setExists = isArchive
+			? setArchiveTemplateExists
+			: setSingleTemplateExists;
 		const fallbackSlug = isArchive ? 'archive' : 'single';
 		const newSlug = isArchive ? `archive-${ slug }` : `single-${ slug }`;
 		const templateUrl = isArchive ? archiveTemplateUrl : singleTemplateUrl;
@@ -175,7 +198,9 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 				method: 'POST',
 				data: {
 					slug: newSlug,
-					title: isArchive ? `Archive: ${ title }` : `Single: ${ title }`,
+					title: isArchive
+						? `Archive: ${ title }`
+						: `Single: ${ title }`,
 					content: defaultContent,
 					status: 'publish',
 				},
@@ -207,7 +232,8 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 				<div className="wpct-sidebar-settings">
 					<div className="wpct-sidebar-settings__header">
 						<span className="wpct-sidebar-settings__title">
-							{ formData.title || __( 'Untitled', 'wp-content-types' ) }
+							{ formData.title ||
+								__( 'Untitled', 'wp-content-types' ) }
 						</span>
 						<Button
 							icon={ moreVertical }
@@ -217,8 +243,12 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 						/>
 					</div>
 					<div style={ { marginTop: '8px' } }>
-						<Badge intent={ formData.public ? 'success' : 'default' }>
-							{ formData.public ? __( 'Public', 'wp-content-types' ) : __( 'Private', 'wp-content-types' ) }
+						<Badge
+							intent={ formData.public ? 'success' : 'default' }
+						>
+							{ formData.public
+								? __( 'Public', 'wp-content-types' )
+								: __( 'Private', 'wp-content-types' ) }
 						</Badge>
 					</div>
 					{ config.public && slug && (
@@ -226,8 +256,15 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 							{ singleTemplateExists === null ? (
 								<Spinner />
 							) : singleTemplateExists ? (
-								<Button variant="link" href={ singleTemplateUrl } target="_blank">
-									{ __( 'Edit Single Template', 'wp-content-types' ) }
+								<Button
+									variant="link"
+									href={ singleTemplateUrl }
+									target="_blank"
+								>
+									{ __(
+										'Edit Single Template',
+										'wp-content-types'
+									) }
 								</Button>
 							) : (
 								<Button
@@ -236,33 +273,50 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 									isBusy={ isCreatingSingle }
 									disabled={ isCreatingSingle }
 								>
-									{ __( 'Create Single Template', 'wp-content-types' ) }
+									{ __(
+										'Create Single Template',
+										'wp-content-types'
+									) }
 								</Button>
 							) }
-							{ config.has_archive && (
-								archiveTemplateExists === null ? (
+							{ config.has_archive &&
+								( archiveTemplateExists === null ? (
 									<Spinner />
 								) : archiveTemplateExists ? (
-									<Button variant="link" href={ archiveTemplateUrl } target="_blank">
-										{ __( 'Edit Archive Template', 'wp-content-types' ) }
+									<Button
+										variant="link"
+										href={ archiveTemplateUrl }
+										target="_blank"
+									>
+										{ __(
+											'Edit Archive Template',
+											'wp-content-types'
+										) }
 									</Button>
 								) : (
 									<Button
 										variant="link"
-										onClick={ () => createTemplate( 'archive' ) }
+										onClick={ () =>
+											createTemplate( 'archive' )
+										}
 										isBusy={ isCreatingArchive }
 										disabled={ isCreatingArchive }
 									>
-										{ __( 'Create Archive Template', 'wp-content-types' ) }
+										{ __(
+											'Create Archive Template',
+											'wp-content-types'
+										) }
 									</Button>
-								)
-							) }
+								) ) }
 						</div>
 					) }
 				</div>
 			) }
 			<Panel>
-				<PanelBody title={ __( 'AI Assistant', 'wp-content-types' ) } initialOpen={ ! isReadOnly ? false : true }>
+				<PanelBody
+					title={ __( 'AI Assistant', 'wp-content-types' ) }
+					initialOpen={ ! isReadOnly ? false : true }
+				>
 					<AIChat
 						contentTypeId={ contentTypeId }
 						contentTypeSlug={ contentTypeSlug }
@@ -346,40 +400,58 @@ function AdvancedTab( { record, editedRecord, edit, config, updateConfig } ) {
 	);
 }
 
-function EditorContent( { record, editedRecord, edit, config, updateConfig, fieldsManager, source } ) {
+function EditorContent( {
+	record,
+	editedRecord,
+	edit,
+	config,
+	updateConfig,
+	fieldsManager,
+	source,
+} ) {
 	const isReadOnly = source !== 'database';
 
 	// Get supports array from config
 	const supports = config.supports || [];
 
 	// Handle toggling a support feature
-	const handleToggleSupport = useCallback( ( supportKey ) => {
-		const currentSupports = config.supports || [];
-		let newSupports;
+	const handleToggleSupport = useCallback(
+		( supportKey ) => {
+			const currentSupports = config.supports || [];
+			let newSupports;
 
-		if ( currentSupports.includes( supportKey ) ) {
-			// Remove the support
-			newSupports = currentSupports.filter( ( s ) => s !== supportKey );
-		} else {
-			// Add the support
-			newSupports = [ ...currentSupports, supportKey ];
-		}
-
-		// Ensure always-enabled supports are included
-		ALWAYS_ENABLED_SUPPORTS.forEach( ( s ) => {
-			if ( ! newSupports.includes( s ) ) {
-				newSupports.push( s );
+			if ( currentSupports.includes( supportKey ) ) {
+				// Remove the support
+				newSupports = currentSupports.filter(
+					( s ) => s !== supportKey
+				);
+			} else {
+				// Add the support
+				newSupports = [ ...currentSupports, supportKey ];
 			}
-		} );
 
-		updateConfig( 'supports', newSupports );
-	}, [ config.supports, updateConfig ] );
+			// Ensure always-enabled supports are included
+			ALWAYS_ENABLED_SUPPORTS.forEach( ( s ) => {
+				if ( ! newSupports.includes( s ) ) {
+					newSupports.push( s );
+				}
+			} );
+
+			updateConfig( 'supports', newSupports );
+		},
+		[ config.supports, updateConfig ]
+	);
 
 	const tabs = [
 		{ name: 'fields', title: __( 'Fields', 'wp-content-types' ) },
-		...( isReadOnly ? [] : [
-			{ name: 'advanced', title: __( 'Advanced', 'wp-content-types' ) },
-		] ),
+		...( isReadOnly
+			? []
+			: [
+					{
+						name: 'advanced',
+						title: __( 'Advanced', 'wp-content-types' ),
+					},
+			  ] ),
 		{ name: 'json', title: __( 'JSON', 'wp-content-types' ) },
 	];
 
@@ -427,8 +499,15 @@ function EditorContent( { record, editedRecord, edit, config, updateConfig, fiel
 
 export default function App() {
 	// For database content types, use entity record
-	const { record, editedRecord, hasEdits, edit, save, isSaving, hasResolved } =
-		useEntityRecord( 'postType', 'wp_content_type', contentTypeId || 0 );
+	const {
+		record,
+		editedRecord,
+		hasEdits,
+		edit,
+		save,
+		isSaving,
+		hasResolved,
+	} = useEntityRecord( 'postType', 'wp_content_type', contentTypeId || 0 );
 
 	// For hardcoded content types, use local state
 	const [ hardcodedState, setHardcodedState ] = useState( () => {
@@ -445,20 +524,20 @@ export default function App() {
 	const isHardcodedType = !! contentTypeSlug && !! contentTypeData;
 	const source = isHardcodedType
 		? contentTypeData.source
-		: ( record?.source ?? 'database' );
+		: record?.source ?? 'database';
 
 	// Title handling
 	const title = isHardcodedType
 		? contentTypeData.name
-		: ( editedRecord?.title ?? record?.title?.rendered ?? '' );
+		: editedRecord?.title ?? record?.title?.rendered ?? '';
 
 	// Config handling
 	const savedConfig = isHardcodedType
 		? contentTypeData.config
-		: ( record?.config ?? {} );
+		: record?.config ?? {};
 	const editedConfig = isHardcodedType
 		? hardcodedState?.config
-		: ( editedRecord?.config ?? savedConfig );
+		: editedRecord?.config ?? savedConfig;
 	const config = { ...DEFAULT_CONFIG, ...editedConfig };
 
 	const updateConfig = useCallback(
@@ -521,7 +600,9 @@ export default function App() {
 		}
 	};
 
-	const currentHasEdits = isHardcodedType ? hardcodedState?.hasEdits : hasEdits;
+	const currentHasEdits = isHardcodedType
+		? hardcodedState?.hasEdits
+		: hasEdits;
 	const isReadOnly = source !== 'database';
 
 	useEffect( () => {
@@ -535,7 +616,9 @@ export default function App() {
 	if ( ! contentTypeId && ! contentTypeSlug ) {
 		return (
 			<div className="wpct-editor wpct-editor--empty">
-				<p>{ __( 'No content type specified.', 'wp-content-types' ) }</p>
+				<p>
+					{ __( 'No content type specified.', 'wp-content-types' ) }
+				</p>
 			</div>
 		);
 	}
@@ -558,7 +641,11 @@ export default function App() {
 					hasEdits={ currentHasEdits }
 					onSave={ handleSave }
 					source={ source }
-					slug={ isHardcodedType ? contentTypeSlug : ( editedRecord?.slug ?? record?.slug ?? '' ) }
+					slug={
+						isHardcodedType
+							? contentTypeSlug
+							: editedRecord?.slug ?? record?.slug ?? ''
+					}
 				/>
 				<div className="wpct-editor__body">
 					<EditorContent
@@ -572,7 +659,11 @@ export default function App() {
 					/>
 					<EditorSidebar
 						contentTypeId={ contentTypeId }
-						contentTypeSlug={ isHardcodedType ? contentTypeSlug : ( editedRecord?.slug ?? record?.slug ?? '' ) }
+						contentTypeSlug={
+							isHardcodedType
+								? contentTypeSlug
+								: editedRecord?.slug ?? record?.slug ?? ''
+						}
 						fieldsManager={ fieldsManager }
 						formData={ formData }
 						isReadOnly={ isReadOnly }

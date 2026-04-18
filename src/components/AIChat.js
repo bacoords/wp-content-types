@@ -9,22 +9,32 @@ import { Button, TextControl, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 
+/**
+ * Maximum number of messages to keep in state to prevent unbounded memory growth.
+ */
+const MAX_MESSAGES = 100;
+
+/**
+ * Debounce delay for scroll operations in milliseconds.
+ */
+const SCROLL_DEBOUNCE_MS = 150;
+
 function ChatMessage( { message, isUser, isError } ) {
 	const className = [
 		'wpct-chat__message',
 		isUser ? 'wpct-chat__message--user' : 'wpct-chat__message--assistant',
 		isError ? 'wpct-chat__message--error' : '',
-	].filter( Boolean ).join( ' ' );
+	]
+		.filter( Boolean )
+		.join( ' ' );
 
-	return (
-		<div className={ className }>
-			{ message }
-		</div>
-	);
+	return <div className={ className }>{ message }</div>;
 }
 
 function AppliedChange( { ability, success, error } ) {
-	const className = `wpct-chat__ability ${ success ? 'wpct-chat__ability--success' : 'wpct-chat__ability--error' }`;
+	const className = `wpct-chat__ability ${
+		success ? 'wpct-chat__ability--success' : 'wpct-chat__ability--error'
+	}`;
 
 	// Format the ability ID for display.
 	const abilityName = ability.ability_id
@@ -58,9 +68,7 @@ function AppliedChange( { ability, success, error } ) {
 				{ description && `: ${ description }` }
 			</span>
 			{ ! success && error && (
-				<span className="wpct-chat__ability-error">
-					{ error }
-				</span>
+				<span className="wpct-chat__ability-error">{ error }</span>
 			) }
 		</div>
 	);
@@ -76,74 +84,150 @@ export default function AIChat( {
 	const [ inputValue, setInputValue ] = useState( '' );
 	const [ isLoading, setIsLoading ] = useState( false );
 	const messagesEndRef = useRef( null );
+	const scrollTimeoutRef = useRef( null );
 
-	// Scroll to bottom when messages change.
+	/**
+	 * Add messages while enforcing the maximum limit.
+	 * This prevents unbounded memory growth during long chat sessions.
+	 */
+	const addMessage = useCallback( ( newMessage ) => {
+		setMessages( ( prev ) => {
+			const updated = [ ...prev, newMessage ];
+			// Trim to max messages if needed
+			if ( updated.length > MAX_MESSAGES ) {
+				return updated.slice( -MAX_MESSAGES );
+			}
+			return updated;
+		} );
+	}, [] );
+
+	// Debounced scroll to bottom when messages change.
+	// Prevents excessive scroll operations during rapid message additions.
 	useEffect( () => {
-		messagesEndRef.current?.scrollIntoView( { behavior: 'smooth' } );
+		// Clear any pending scroll
+		if ( scrollTimeoutRef.current ) {
+			clearTimeout( scrollTimeoutRef.current );
+		}
+
+		// Debounce the scroll operation
+		scrollTimeoutRef.current = setTimeout( () => {
+			messagesEndRef.current?.scrollIntoView( { behavior: 'smooth' } );
+		}, SCROLL_DEBOUNCE_MS );
+
+		// Cleanup on unmount or when messages change again
+		return () => {
+			if ( scrollTimeoutRef.current ) {
+				clearTimeout( scrollTimeoutRef.current );
+			}
+		};
 	}, [ messages ] );
 
 	/**
 	 * Apply an ability to the local state.
 	 */
-	const applyAbility = useCallback( ( ability ) => {
-		const { ability_id: abilityId, input } = ability;
+	const applyAbility = useCallback(
+		( ability ) => {
+			const { ability_id: abilityId, input } = ability;
 
-		try {
-			switch ( abilityId ) {
-				case 'content-types/fields-add':
-					if ( fieldsManager?.addField ) {
-						fieldsManager.addField( {
-							key: input.key,
-							label: input.label || input.key,
-							type: input.type || 'text',
-							config: input.config || {},
-						} );
-						return { success: true };
-					}
-					return { success: false, error: __( 'Field manager not available', 'wp-content-types' ) };
-
-				case 'content-types/fields-remove':
-					if ( fieldsManager?.deleteFieldByKey ) {
-						const deleted = fieldsManager.deleteFieldByKey( input.field_key );
-						if ( deleted ) {
+			try {
+				switch ( abilityId ) {
+					case 'content-types/fields-add':
+						if ( fieldsManager?.addField ) {
+							fieldsManager.addField( {
+								key: input.key,
+								label: input.label || input.key,
+								type: input.type || 'text',
+								config: input.config || {},
+							} );
 							return { success: true };
 						}
-						return { success: false, error: __( 'Field not found', 'wp-content-types' ) };
-					}
-					return { success: false, error: __( 'Field manager not available', 'wp-content-types' ) };
+						return {
+							success: false,
+							error: __(
+								'Field manager not available',
+								'wp-content-types'
+							),
+						};
 
-				case 'content-types/fields-update':
-					if ( fieldsManager?.updateFieldByKey ) {
-						// Build edits object with only defined properties
-						const edits = {};
-						if ( input.label !== undefined ) {
-							edits.label = input.label;
+					case 'content-types/fields-remove':
+						if ( fieldsManager?.deleteFieldByKey ) {
+							const deleted = fieldsManager.deleteFieldByKey(
+								input.field_key
+							);
+							if ( deleted ) {
+								return { success: true };
+							}
+							return {
+								success: false,
+								error: __(
+									'Field not found',
+									'wp-content-types'
+								),
+							};
 						}
-						if ( input.type !== undefined ) {
-							edits.type = input.type;
-						}
-						if ( input.required !== undefined ) {
-							edits.required = input.required;
-						}
-						if ( input.config !== undefined ) {
-							edits.config = input.config;
-						}
+						return {
+							success: false,
+							error: __(
+								'Field manager not available',
+								'wp-content-types'
+							),
+						};
 
-						const updated = fieldsManager.updateFieldByKey( input.field_key, edits );
-						if ( updated ) {
-							return { success: true };
-						}
-						return { success: false, error: __( 'Field not found', 'wp-content-types' ) };
-					}
-					return { success: false, error: __( 'Field manager not available', 'wp-content-types' ) };
+					case 'content-types/fields-update':
+						if ( fieldsManager?.updateFieldByKey ) {
+							// Build edits object with only defined properties
+							const edits = {};
+							if ( input.label !== undefined ) {
+								edits.label = input.label;
+							}
+							if ( input.type !== undefined ) {
+								edits.type = input.type;
+							}
+							if ( input.required !== undefined ) {
+								edits.required = input.required;
+							}
+							if ( input.config !== undefined ) {
+								edits.config = input.config;
+							}
 
-				default:
-					return { success: false, error: __( 'Action not supported in editor', 'wp-content-types' ) };
+							const updated = fieldsManager.updateFieldByKey(
+								input.field_key,
+								edits
+							);
+							if ( updated ) {
+								return { success: true };
+							}
+							return {
+								success: false,
+								error: __(
+									'Field not found',
+									'wp-content-types'
+								),
+							};
+						}
+						return {
+							success: false,
+							error: __(
+								'Field manager not available',
+								'wp-content-types'
+							),
+						};
+
+					default:
+						return {
+							success: false,
+							error: __(
+								'Action not supported in editor',
+								'wp-content-types'
+							),
+						};
+				}
+			} catch ( err ) {
+				return { success: false, error: err.message };
 			}
-		} catch ( err ) {
-			return { success: false, error: err.message };
-		}
-	}, [ fieldsManager ] );
+		},
+		[ fieldsManager ]
+	);
 
 	const handleSubmit = async ( e ) => {
 		e?.preventDefault();
@@ -159,7 +243,7 @@ export default function AIChat( {
 			text: trimmedInput,
 			isUser: true,
 		};
-		setMessages( ( prev ) => [ ...prev, userMessage ] );
+		addMessage( userMessage );
 		setInputValue( '' );
 		setIsLoading( true );
 
@@ -187,7 +271,9 @@ export default function AIChat( {
 
 			// Check if response indicates an error.
 			if ( response.success === false || response.code ) {
-				throw new Error( response.message || response.code || 'Unknown error' );
+				throw new Error(
+					response.message || response.code || 'Unknown error'
+				);
 			}
 
 			// Apply abilities client-side.
@@ -223,7 +309,11 @@ export default function AIChat( {
 					}
 				} catch ( err ) {
 					for ( const ability of fieldsToAdd ) {
-						appliedChanges.push( { ability, success: false, error: err.message } );
+						appliedChanges.push( {
+							ability,
+							success: false,
+							error: err.message,
+						} );
 					}
 				}
 			} else if ( fieldsToAdd.length > 0 ) {
@@ -231,7 +321,10 @@ export default function AIChat( {
 					appliedChanges.push( {
 						ability,
 						success: false,
-						error: __( 'Field manager not available', 'wp-content-types' ),
+						error: __(
+							'Field manager not available',
+							'wp-content-types'
+						),
 					} );
 				}
 			}
@@ -249,17 +342,21 @@ export default function AIChat( {
 				isUser: false,
 				appliedChanges,
 			};
-			setMessages( ( prev ) => [ ...prev, assistantMessage ] );
-
+			addMessage( assistantMessage );
 		} catch ( error ) {
 			// Add error message.
 			const errorMessage = {
 				id: Date.now() + 1,
-				text: error.message || __( 'Something went wrong. Please try again.', 'wp-content-types' ),
+				text:
+					error.message ||
+					__(
+						'Something went wrong. Please try again.',
+						'wp-content-types'
+					),
 				isUser: false,
 				isError: true,
 			};
-			setMessages( ( prev ) => [ ...prev, errorMessage ] );
+			addMessage( errorMessage );
 		} finally {
 			setIsLoading( false );
 		}
@@ -277,13 +374,24 @@ export default function AIChat( {
 			<div className="wpct-chat__messages">
 				{ messages.length === 0 && (
 					<div className="wpct-chat__empty">
-						<p>{ __( 'Ask me to create or modify fields.', 'wp-content-types' ) }</p>
+						<p>
+							{ __(
+								'Ask me to create or modify fields.',
+								'wp-content-types'
+							) }
+						</p>
 						<p className="wpct-chat__examples">
 							{ __( 'Try:', 'wp-content-types' ) }
 							<br />
-							{ __( '"Add a text field called Author Name"', 'wp-content-types' ) }
+							{ __(
+								'"Add a text field called Author Name"',
+								'wp-content-types'
+							) }
 							<br />
-							{ __( '"Create a date field for publication date"', 'wp-content-types' ) }
+							{ __(
+								'"Create a date field for publication date"',
+								'wp-content-types'
+							) }
 						</p>
 					</div>
 				) }
@@ -320,7 +428,7 @@ export default function AIChat( {
 					value={ inputValue }
 					onChange={ setInputValue }
 					onKeyDown={ handleKeyDown }
-					placeholder={ __( 'Type a message...', 'wp-content-types' ) }
+					placeholder={ __( 'Type a message…', 'wp-content-types' ) }
 					disabled={ isLoading }
 					__nextHasNoMarginBottom
 				/>

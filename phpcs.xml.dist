@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<ruleset name="WP Content Types">
+	<description>PHP Coding Standards for WP Content Types plugin.</description>
+
+	<!-- What to scan -->
+	<file>.</file>
+	<exclude-pattern>/vendor/</exclude-pattern>
+	<exclude-pattern>/node_modules/</exclude-pattern>
+	<exclude-pattern>/build/</exclude-pattern>
+	<exclude-pattern>/tests/</exclude-pattern>
+
+	<!-- How to scan -->
+	<arg value="sp"/> <!-- Show sniff codes and progress -->
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="8"/>
+
+	<!-- Rules: WordPress Coding Standards -->
+	<rule ref="WordPress-Extra">
+		<!-- Allow short array syntax -->
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+	</rule>
+
+	<!-- Rules: WordPress Documentation Standards -->
+	<rule ref="WordPress-Docs"/>
+
+	<!-- Set text domain for i18n -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="wp-content-types"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Minimum supported PHP version -->
+	<config name="testVersion" value="7.4-"/>
+
+	<!-- PHP Compatibility -->
+	<rule ref="PHPCompatibilityWP"/>
+
+	<!-- Set minimum supported WordPress version -->
+	<config name="minimum_wp_version" value="6.4"/>
+
+	<!-- Allow . in hook names (common pattern) -->
+	<rule ref="WordPress.NamingConventions.ValidHookName">
+		<properties>
+			<property name="additionalWordDelimiters" value="."/>
+		</properties>
+	</rule>
+
+	<!-- Verify that everything in the global namespace is prefixed -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="wpct"/>
+				<element value="wp_content_types"/>
+				<element value="WP_Content_Types"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

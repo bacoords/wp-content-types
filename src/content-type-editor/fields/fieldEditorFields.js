@@ -30,7 +30,10 @@ export function getFieldEditorFields() {
 			id: 'label',
 			type: 'text',
 			label: __( 'Label', 'wp-content-types' ),
-			description: __( 'The display label for this field.', 'wp-content-types' ),
+			description: __(
+				'The display label for this field.',
+				'wp-content-types'
+			),
 			placeholder: __( 'e.g. Author Name', 'wp-content-types' ),
 			isValid: { required: true },
 		},
@@ -38,7 +41,10 @@ export function getFieldEditorFields() {
 			id: 'key',
 			type: 'text',
 			label: __( 'Key', 'wp-content-types' ),
-			description: __( 'Unique identifier for this field. Auto-generated from label.', 'wp-content-types' ),
+			description: __(
+				'Unique identifier for this field. Auto-generated from label.',
+				'wp-content-types'
+			),
 			placeholder: __( 'e.g. author_name', 'wp-content-types' ),
 			isValid: {
 				required: true,
@@ -66,15 +72,27 @@ export function getFieldEditorFields() {
 			id: 'description',
 			type: 'text',
 			label: __( 'Description', 'wp-content-types' ),
-			description: __( 'Help text shown below the field.', 'wp-content-types' ),
-			placeholder: __( 'e.g. Enter the full name of the author', 'wp-content-types' ),
+			description: __(
+				'Help text shown below the field.',
+				'wp-content-types'
+			),
+			placeholder: __(
+				'e.g. Enter the full name of the author',
+				'wp-content-types'
+			),
 		},
 		{
 			id: 'placeholder',
 			type: 'text',
 			label: __( 'Placeholder', 'wp-content-types' ),
-			description: __( 'Placeholder text shown when field is empty.', 'wp-content-types' ),
-			isVisible: ( item ) => [ 'text', 'textarea', 'number', 'email', 'url' ].includes( item.type ),
+			description: __(
+				'Placeholder text shown when field is empty.',
+				'wp-content-types'
+			),
+			isVisible: ( item ) =>
+				[ 'text', 'textarea', 'number', 'email', 'url' ].includes(
+					item.type
+				),
 		},
 
 		// Type-specific: Options (for select/radio)
@@ -82,7 +100,10 @@ export function getFieldEditorFields() {
 			id: 'options',
 			type: 'text',
 			label: __( 'Options', 'wp-content-types' ),
-			description: __( 'One option per line. Format: value|Label (e.g. draft|Draft)', 'wp-content-types' ),
+			description: __(
+				'One option per line. Format: value|Label (e.g. draft|Draft)',
+				'wp-content-types'
+			),
 			placeholder: 'option1|Option One\noption2|Option Two',
 		},
 
@@ -101,7 +122,10 @@ export function getFieldEditorFields() {
 			id: 'config_step',
 			type: 'text',
 			label: __( 'Step', 'wp-content-types' ),
-			description: __( 'Increment/decrement step value.', 'wp-content-types' ),
+			description: __(
+				'Increment/decrement step value.',
+				'wp-content-types'
+			),
 		},
 
 		// Type-specific: Textarea rows
@@ -109,7 +133,10 @@ export function getFieldEditorFields() {
 			id: 'config_rows',
 			type: 'text',
 			label: __( 'Rows', 'wp-content-types' ),
-			description: __( 'Number of visible text rows.', 'wp-content-types' ),
+			description: __(
+				'Number of visible text rows.',
+				'wp-content-types'
+			),
 		},
 	];
 }
