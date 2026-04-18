@@ -1,7 +1,8 @@
 /**
  * Custom Fields Sidebar Component
  *
- * Displays a DataForm with custom fields in a dedicated sidebar.
+ * Displays a DataForm with custom fields in a dedicated sidebar,
+ * or as a full canvas editor when block editor is disabled.
  */
 
 import { PluginSidebar, PluginSidebarMoreMenuItem } from '@wordpress/editor';
@@ -10,7 +11,8 @@ import { useSelect } from '@wordpress/data';
 import { useMemo, useCallback } from '@wordpress/element';
 import { DataForm } from '@wordpress/dataviews';
 import { __ } from '@wordpress/i18n';
-import { database } from '@wordpress/icons';
+import { blockMeta } from '@wordpress/icons';
+import FullCanvasEditor from './FullCanvasEditor';
 
 const SIDEBAR_NAME = 'wpct-custom-fields-sidebar';
 
@@ -90,12 +92,18 @@ function buildFormLayout( fields ) {
 
 export default function CustomFieldsSidebar() {
 	const contentType = window.wpctEditorSettings?.contentType;
+	const useBlockEditor = window.wpctEditorSettings?.useBlockEditor ?? true;
 
 	// Memoize fields to prevent unnecessary re-renders
 	const contentTypeFields = useMemo(
 		() => contentType?.config?.fields || [],
 		[ contentType ]
 	);
+
+	// If block editor is disabled, render full canvas mode
+	if ( ! useBlockEditor ) {
+		return <FullCanvasEditor />;
+	}
 
 	// Get current post type
 	const postType = useSelect( ( select ) => {
@@ -149,14 +157,14 @@ export default function CustomFieldsSidebar() {
 		<>
 			<PluginSidebarMoreMenuItem
 				target={ SIDEBAR_NAME }
-				icon={ database }
+				icon={ blockMeta }
 			>
 				{ sidebarTitle }
 			</PluginSidebarMoreMenuItem>
 			<PluginSidebar
 				name={ SIDEBAR_NAME }
 				title={ sidebarTitle }
-				icon={ database }
+				icon={ blockMeta }
 			>
 				<div className="wpct-custom-fields-sidebar">
 					<DataForm

@@ -20,3 +20,69 @@
 .wpct-custom-fields-sidebar .components-base-control:last-child {
 	margin-bottom: 0;
 }
+
+/**
+ * Full Canvas Editor Styles
+ *
+ * When block editor is disabled, the custom fields form takes over
+ * the content area instead of appearing in a sidebar.
+ */
+
+/* Portal container that we inject into the editor */
+.wpct-full-canvas-container {
+	position: absolute;
+	inset: 0;
+	z-index: 100;
+	pointer-events: auto;
+}
+
+/* Full canvas editor container */
+.wpct-full-canvas-editor {
+	position: absolute;
+	inset: 0;
+	padding: 24px;
+	background: #fff;
+	overflow-y: auto;
+	z-index: 10;
+}
+
+.wpct-full-canvas-editor .components-base-control {
+	margin-bottom: 24px;
+}
+
+.wpct-full-canvas-editor .dataforms-layouts-panel__field-label {
+	font-weight: 500;
+	margin-bottom: 8px;
+}
+
+.wpct-full-canvas-editor > .dataforms-layouts-regular {
+	max-width: 640px;
+}
+
+/* Empty state */
+.wpct-full-canvas-editor__empty {
+	text-align: center;
+	padding: 48px 24px;
+	color: #757575;
+}
+
+.wpct-full-canvas-editor__empty p {
+	margin: 0 0 8px;
+}
+
+.wpct-full-canvas-editor__empty p:last-child {
+	margin-bottom: 0;
+}
+
+/* When full canvas is active, hide the underlying text editor textarea */
+.wpct-full-canvas-active .editor-text-editor__body {
+	visibility: hidden;
+}
+
+/* Ensure proper positioning context for the editor content area only */
+.wpct-full-canvas-active .editor-text-editor,
+.wpct-full-canvas-active .edit-post-visual-editor__content-area,
+.wpct-full-canvas-active .editor-visual-editor {
+	position: relative;
+	min-height: 400px;
+}

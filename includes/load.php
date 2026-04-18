@@ -41,20 +41,3 @@ add_action( 'init', array( 'WPCT_Editor', 'init' ) );
 
 // Initialize AI Chat REST endpoint.
 WPCT_AI_Chat::init();
-
-
-// add_filter(
-// 'block_editor_settings_all',
-// function ( $settings, $context ) {
-// Check if we're editing a specific post type
-// if ( isset( $context->post ) && get_post_type( $context->post ) === 'event'
-// ) {
-// $settings['richEditingEnabled'] = false;
-// Optionally also disable code editing to see what happens:
-// $settings['codeEditingEnabled'] = false;
-// }
-// return $settings;
-// },
-// 10,
-// 2
-// );

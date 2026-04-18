@@ -20,6 +20,12 @@ export const SIDEBAR_SETTINGS_FORM = {
 export function getAdvancedForm( isPublic ) {
 	const cards = [
 		{
+			id: 'editor',
+			label: __( 'Editor', 'wp-content-types' ),
+			layout: { type: 'card' },
+			children: [ 'use_block_editor' ],
+		},
+		{
 			id: 'visibility',
 			label: __( 'Visibility', 'wp-content-types' ),
 			layout: { type: 'card' },

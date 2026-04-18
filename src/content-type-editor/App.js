@@ -46,6 +46,7 @@ const DEFAULT_CONFIG = {
 	menu_icon: 'dashicons-database',
 	menu_position: null,
 	supports: [ 'title', 'editor', 'thumbnail', 'custom-fields' ],
+	use_block_editor: true,
 };
 
 const CORE_POST_TYPES = [ 'post', 'page', 'attachment' ];

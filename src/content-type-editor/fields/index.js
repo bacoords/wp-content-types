@@ -11,6 +11,17 @@ import { __ } from '@wordpress/i18n';
  */
 export function getAdvancedFields( slug ) {
 	return [
+		// Editor field
+		{
+			id: 'use_block_editor',
+			type: 'boolean',
+			label: __( 'Use Block Editor', 'wp-content-types' ),
+			description: __(
+				'Enable the full block editor. When disabled, only custom fields are shown.',
+				'wp-content-types'
+			),
+		},
+
 		// Visibility fields
 		{
 			id: 'hierarchical',

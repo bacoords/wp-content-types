@@ -11,11 +11,12 @@ import './styles.css';
 
 const contentType = window.wpctEditorSettings?.contentType;
 const fields = contentType?.config?.fields || [];
+const useBlockEditor = window.wpctEditorSettings?.useBlockEditor ?? true;
 
-// Only register if there are custom fields
-if ( fields.length > 0 ) {
+// Register if there are custom fields OR if block editor is disabled (show full canvas)
+if ( fields.length > 0 || ! useBlockEditor ) {
 	registerPlugin( 'wpct-custom-fields', {
 		render: CustomFieldsPanel,
-		icon: 'database',
+		icon: 'blockMeta',
 	} );
 }

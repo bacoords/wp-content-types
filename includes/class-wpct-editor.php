@@ -21,6 +21,65 @@ class WPCT_Editor {
 	 */
 	public static function init() {
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue_assets' ) );
+		add_filter( 'block_editor_settings_all', array( __CLASS__, 'filter_editor_settings' ), 10, 2 );
+		add_filter( 'admin_body_class', array( __CLASS__, 'add_body_class' ) );
+	}
+
+	/**
+	 * Filter block editor settings based on content type config.
+	 *
+	 * @param array                   $settings Block editor settings.
+	 * @param WP_Block_Editor_Context $context  Block editor context.
+	 * @return array Modified settings.
+	 */
+	public static function filter_editor_settings( $settings, $context ) {
+		if ( ! isset( $context->post ) ) {
+			return $settings;
+		}
+
+		$post_type    = get_post_type( $context->post );
+		$content_type = WPCT_Registry::get( $post_type );
+
+		if ( ! $content_type ) {
+			return $settings;
+		}
+
+		// Check if block editor should be disabled.
+		$use_block_editor = $content_type['config']['use_block_editor'] ?? true;
+
+		if ( ! $use_block_editor ) {
+			$settings['richEditingEnabled'] = false;
+		}
+
+		return $settings;
+	}
+
+	/**
+	 * Add body class when block editor is disabled.
+	 *
+	 * @param string $classes Space-separated list of body classes.
+	 * @return string Modified classes.
+	 */
+	public static function add_body_class( $classes ) {
+		global $post;
+
+		if ( ! $post ) {
+			return $classes;
+		}
+
+		$content_type = WPCT_Registry::get( get_post_type( $post ) );
+
+		if ( ! $content_type ) {
+			return $classes;
+		}
+
+		$use_block_editor = $content_type['config']['use_block_editor'] ?? true;
+
+		if ( ! $use_block_editor ) {
+			$classes .= ' wpct-no-block-editor';
+		}
+
+		return $classes;
 	}
 
 	/**
@@ -65,8 +124,9 @@ class WPCT_Editor {
 			'wpct-editor',
 			'wpctEditorSettings',
 			array(
-				'postType'    => $post_type,
-				'contentType' => $content_type,
+				'postType'       => $post_type,
+				'contentType'    => $content_type,
+				'useBlockEditor' => $content_type['config']['use_block_editor'] ?? true,
 			)
 		);
 	}
