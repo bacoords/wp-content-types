@@ -122,6 +122,13 @@ body.is-fullscreen-mode #wpfooter {
 	min-height: 0;
 }
 
+/* Remove padding when DataViews is inside */
+.wpct-editor__tab-content:has(.dataviews-wrapper) {
+	padding-top: 0;
+	padding-left: 0;
+	padding-right: 0;
+}
+
 .wpct-editor__tab-content::-webkit-scrollbar {
 	display: none;
 }

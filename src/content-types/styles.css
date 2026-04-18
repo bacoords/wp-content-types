@@ -72,6 +72,13 @@ body.is-fullscreen-mode #wpfooter {
 	-ms-overflow-style: none;
 }
 
+/* Remove padding when DataViews is inside */
+.wpct-list__content:has(.dataviews-wrapper) {
+	padding-top: 0;
+	padding-left: 0;
+	padding-right: 0;
+}
+
 .wpct-list__content::-webkit-scrollbar {
 	display: none;
 }
