@@ -15,6 +15,8 @@ class WPCT_Admin {
 	public static function init() {
 		self::add_menu();
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
+		add_filter( 'parent_file', array( __CLASS__, 'fix_parent_menu' ) );
+		add_filter( 'submenu_file', array( __CLASS__, 'fix_submenu_file' ) );
 	}
 
 	/**
@@ -33,11 +35,11 @@ class WPCT_Admin {
 			79
 		);
 
-		// Edit Content Type subpage.
+		// Edit Content Type page (hidden from menu).
 		add_submenu_page(
-			'wp-content-types',
+			null,
 			__( 'Edit Content Type', 'wp-content-types' ),
-			__( 'Add New', 'wp-content-types' ),
+			__( 'Edit Content Type', 'wp-content-types' ),
 			'manage_options',
 			'wp-content-type-edit',
 			array( __CLASS__, 'render_content_type_editor_page' )
@@ -104,14 +106,46 @@ class WPCT_Admin {
 	}
 
 	/**
+	 * Fix parent menu highlighting when on the edit content type page.
+	 *
+	 * @param string $parent_file The parent file.
+	 * @return string
+	 */
+	public static function fix_parent_menu( $parent_file ) {
+		global $plugin_page;
+
+		if ( 'wp-content-type-edit' === $plugin_page ) {
+			return 'wp-content-types';
+		}
+
+		return $parent_file;
+	}
+
+	/**
+	 * Fix submenu file to not highlight any submenu item.
+	 *
+	 * @param string $submenu_file The submenu file.
+	 * @return string
+	 */
+	public static function fix_submenu_file( $submenu_file ) {
+		global $plugin_page;
+
+		if ( 'wp-content-type-edit' === $plugin_page ) {
+			return 'wp-content-types';
+		}
+
+		return $submenu_file;
+	}
+
+	/**
 	 * Enqueue admin assets.
 	 *
 	 * @param string $hook_suffix Current admin page.
 	 */
 	public static function enqueue_assets( $hook_suffix ) {
 		$screen_map = array(
-			'toplevel_page_wp-content-types'         => 'content-types',
-			'content-types_page_wp-content-type-edit' => 'content-type-editor',
+			'toplevel_page_wp-content-types' => 'content-types',
+			'admin_page_wp-content-type-edit' => 'content-type-editor',
 		);
 
 		if ( ! isset( $screen_map[ $hook_suffix ] ) ) {

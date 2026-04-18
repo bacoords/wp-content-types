@@ -59,6 +59,7 @@ const SIDEBAR_SETTINGS_FIELDS = [
 		type: 'text',
 		label: __( 'Slug', 'wp-content-types' ),
 		placeholder: __( 'e.g. book', 'wp-content-types' ),
+		description: __( 'Warning: changing the slug will remove any existing data you\'ve already entered.', 'wp-content-types' ),
 	},
 	{
 		id: 'public',

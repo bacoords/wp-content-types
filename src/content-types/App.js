@@ -1,19 +1,22 @@
 /**
  * Content Types List App
  */
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useEntityRecords } from '@wordpress/core-data';
-import { DataViews } from '@wordpress/dataviews';
+import { DataViews, DataForm } from '@wordpress/dataviews';
 import {
 	Button,
 	Icon,
+	Modal,
 	Panel,
 	PanelBody,
 	SlotFillProvider,
 	Popover,
+	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 
 function getEditUrl( item ) {
 	// For hardcoded types without a database ID, use slug.
@@ -153,14 +156,160 @@ const actions = [
 	},
 ];
 
-function ListHeader() {
-	const addNewUrl = window.wpctSettings.adminUrl + 'admin.php?page=wp-content-type-edit';
+/**
+ * Generate a slug from a name.
+ *
+ * @param {string} name The name to convert.
+ * @return {string} The slug.
+ */
+function nameToSlug( name ) {
+	return name
+		.toLowerCase()
+		.replace( /[^a-z0-9]+/g, '_' )
+		.replace( /^_+|_+$/g, '' )
+		.substring( 0, 20 );
+}
 
+/**
+ * Form fields for the Add Content Type modal.
+ */
+const addContentTypeFields = [
+	{
+		id: 'name',
+		label: __( 'Name', 'wp-content-types' ),
+		type: 'text',
+	},
+	{
+		id: 'slug',
+		label: __( 'Slug', 'wp-content-types' ),
+		type: 'text',
+	},
+	{
+		id: 'public',
+		label: __( 'Public', 'wp-content-types' ),
+		type: 'text',
+		Edit: ( { data, field, onChange } ) => {
+			const { ToggleControl } = wp.components;
+			return (
+				<ToggleControl
+					__nextHasNoMarginBottom
+					label={ __( 'Public', 'wp-content-types' ) }
+					checked={ data.public }
+					onChange={ ( value ) => onChange( { public: value } ) }
+				/>
+			);
+		},
+	},
+];
+
+/**
+ * Form layout for the Add Content Type modal.
+ */
+const addContentTypeForm = {
+	fields: [ 'name', 'slug', 'public' ],
+};
+
+/**
+ * Add Content Type Modal Component.
+ */
+function AddContentTypeModal( { onClose } ) {
+	const [ formData, setFormData ] = useState( {
+		name: '',
+		slug: '',
+		public: true,
+	} );
+	const [ isCreating, setIsCreating ] = useState( false );
+	const [ autoSlug, setAutoSlug ] = useState( true );
+
+	const handleChange = useCallback( ( edits ) => {
+		setFormData( ( prev ) => {
+			const newData = { ...prev, ...edits };
+
+			// Auto-generate slug from name if user hasn't manually edited it
+			if ( edits.name !== undefined && autoSlug ) {
+				newData.slug = nameToSlug( edits.name );
+			}
+
+			// If user manually edits slug, stop auto-generating
+			if ( edits.slug !== undefined && edits.name === undefined ) {
+				setAutoSlug( false );
+			}
+
+			return newData;
+		} );
+	}, [ autoSlug ] );
+
+	const handleCreate = useCallback( async () => {
+		if ( ! formData.name.trim() || ! formData.slug.trim() ) {
+			return;
+		}
+
+		setIsCreating( true );
+
+		try {
+			const response = await apiFetch( {
+				path: '/wp/v2/content-types',
+				method: 'POST',
+				data: {
+					title: formData.name,
+					slug: formData.slug,
+					status: 'publish',
+					config: {
+						public: formData.public,
+					},
+				},
+			} );
+
+			// Redirect to the edit page for the new content type
+			window.location.href = `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ response.id }`;
+		} catch ( error ) {
+			console.error( 'Failed to create content type:', error );
+			setIsCreating( false );
+		}
+	}, [ formData ] );
+
+	const isValid = formData.name.trim() && formData.slug.trim();
+
+	return (
+		<Modal
+			title={ __( 'Add Content Type', 'wp-content-types' ) }
+			onRequestClose={ onClose }
+			className="wpct-add-content-type-modal"
+			size="small"
+		>
+			<div className="wpct-add-content-type-modal__content">
+				<DataForm
+					data={ formData }
+					fields={ addContentTypeFields }
+					form={ addContentTypeForm }
+					onChange={ handleChange }
+				/>
+			</div>
+			<div className="wpct-add-content-type-modal__footer">
+				<HStack justify="flex-end" spacing={ 3 }>
+					<Button variant="tertiary" onClick={ onClose }>
+						{ __( 'Cancel', 'wp-content-types' ) }
+					</Button>
+					<Button
+						variant="primary"
+						onClick={ handleCreate }
+						disabled={ ! isValid || isCreating }
+						isBusy={ isCreating }
+					>
+						{ __( 'Create', 'wp-content-types' ) }
+					</Button>
+				</HStack>
+			</div>
+		</Modal>
+	);
+}
+
+function ListHeader( { onAddNew } ) {
 	return (
 		<div className="wpct-list__header">
 			<h1>{ __( 'Content Types', 'wp-content-types' ) }</h1>
 			<div className="wpct-list__header-actions">
-				<Button variant="primary" href={ addNewUrl }>
+				<Button variant="primary" onClick={ onAddNew }>
 					{ __( 'Add New', 'wp-content-types' ) }
 				</Button>
 			</div>
@@ -213,6 +362,8 @@ export default function App() {
 		fields: [ 'slug', 'source', 'visibility' ],
 	} );
 
+	const [ isAddModalOpen, setIsAddModalOpen ] = useState( false );
+
 	useEffect( () => {
 		document.body.classList.add( 'is-fullscreen-mode' );
 		return () => {
@@ -223,7 +374,7 @@ export default function App() {
 	return (
 		<SlotFillProvider>
 			<div className="wpct-list">
-				<ListHeader />
+				<ListHeader onAddNew={ () => setIsAddModalOpen( true ) } />
 				<div className="wpct-list__body">
 					<ListContent
 						data={ data }
@@ -234,6 +385,9 @@ export default function App() {
 					<ListSidebar />
 				</div>
 			</div>
+			{ isAddModalOpen && (
+				<AddContentTypeModal onClose={ () => setIsAddModalOpen( false ) } />
+			) }
 			<Popover.Slot />
 		</SlotFillProvider>
 	);
