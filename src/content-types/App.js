@@ -6,12 +6,12 @@ import { useEntityRecords } from '@wordpress/core-data';
 import { DataViews } from '@wordpress/dataviews';
 import {
 	Button,
-	Icon,
 	Panel,
 	PanelBody,
 	SlotFillProvider,
 	Popover,
 } from '@wordpress/components';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import ContentTypeSettingsModal from '../components/ContentTypeSettingsModal';
@@ -157,7 +157,7 @@ const actions = [
 		isEligible: ( item ) => item.source === 'database',
 		callback: async ( items ) => {
 			const item = items[ 0 ];
-			// TODO: Implement delete via REST API
+			/* eslint-disable no-alert */
 			if (
 				window.confirm(
 					__(
@@ -166,13 +166,15 @@ const actions = [
 					)
 				)
 			) {
+				/* eslint-enable no-alert */
 				try {
-					const response = await window.wp.apiFetch( {
+					await window.wp.apiFetch( {
 						path: `/wp/v2/content-types/${ item.id }`,
 						method: 'DELETE',
 					} );
 					window.location.reload();
 				} catch ( error ) {
+					// eslint-disable-next-line no-console
 					console.error( 'Failed to delete content type:', error );
 				}
 			}

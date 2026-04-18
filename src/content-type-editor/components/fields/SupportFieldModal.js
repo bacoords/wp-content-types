@@ -3,7 +3,7 @@
  *
  * Simple modal for enabling/disabling a built-in support field.
  */
-import { Modal, ToggleControl, Button, Icon } from '@wordpress/components';
+import { Modal, ToggleControl, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 export default function SupportFieldModal( {

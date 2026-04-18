@@ -6,6 +6,7 @@
 import {
 	Button,
 	Modal,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
@@ -167,22 +168,13 @@ export default function FieldEditorModal( {
 	// Local state for form data
 	const [ localData, setLocalData ] = useState( () => flattenField( field ) );
 
-	// Track if we have unsaved changes
-	const [ hasChanges, setHasChanges ] = useState( false );
-
 	// Reset local state when a DIFFERENT field is edited (by _id)
 	useEffect( () => {
 		if ( field?._id !== fieldIdRef.current ) {
 			fieldIdRef.current = field?._id;
 			setLocalData( flattenField( field ) );
-			setHasChanges( false );
 		}
 	}, [ field ] );
-
-	// Guard against missing field
-	if ( ! field || ! field._id ) {
-		return null;
-	}
 
 	// Get fields definition (stable reference)
 	const fields = useMemo( () => getFieldEditorFields(), [] );
@@ -196,19 +188,18 @@ export default function FieldEditorModal( {
 	// Handle changes from DataForm - update local state only
 	const handleChange = useCallback( ( edits ) => {
 		setLocalData( ( prev ) => ( { ...prev, ...edits } ) );
-		setHasChanges( true );
 	}, [] );
 
 	// Handle save
 	const handleSave = useCallback( () => {
 		const unflattened = unflattenData( localData );
-		onSave( field._id, unflattened );
+		onSave( field?._id, unflattened );
 		onClose();
-	}, [ localData, field._id, onSave, onClose ] );
+	}, [ localData, field?._id, onSave, onClose ] );
 
 	// Handle delete
 	const handleDelete = useCallback( () => {
-		// eslint-disable-next-line no-alert
+		/* eslint-disable no-alert */
 		if (
 			window.confirm(
 				__(
@@ -217,9 +208,15 @@ export default function FieldEditorModal( {
 				)
 			)
 		) {
-			onDelete( field._id );
+			onDelete( field?._id );
 		}
-	}, [ field._id, onDelete ] );
+		/* eslint-enable no-alert */
+	}, [ field?._id, onDelete ] );
+
+	// Guard against missing field - must be after all hooks
+	if ( ! field || ! field._id ) {
+		return null;
+	}
 
 	// Modal title
 	const isNewField =

@@ -135,6 +135,7 @@ export function useFieldsManager( { config, updateConfig } ) {
 	const initializedRef = useRef( false );
 
 	// Get fields with ensured _id properties, migrating from field_groups if needed
+	// Intentionally only depending on config.fields and config.field_groups for performance
 	const fields = useMemo( () => {
 		// Check for flat fields first
 		if ( Array.isArray( config.fields ) && config.fields.length > 0 ) {
@@ -151,6 +152,7 @@ export function useFieldsManager( { config, updateConfig } ) {
 		}
 
 		return [];
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ config.fields, config.field_groups ] );
 
 	// Initialize IDs and migrate on first render if needed

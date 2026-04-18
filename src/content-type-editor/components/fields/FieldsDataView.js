@@ -7,6 +7,7 @@
 import { useState, useCallback, useMemo } from '@wordpress/element';
 import { DataViews } from '@wordpress/dataviews';
 import { Button } from '@wordpress/components';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { plus } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import FieldEditorModal from './FieldEditorModal';
@@ -174,12 +175,10 @@ export default function FieldsDataView( {
 						value: __( 'WordPress', 'wp-content-types' ),
 						label: __( 'WordPress', 'wp-content-types' ),
 					},
-					...Object.entries( FIELD_TYPE_LABELS ).map(
-						( [ value, label ] ) => ( {
-							value: label,
-							label,
-						} )
-					),
+					...Object.values( FIELD_TYPE_LABELS ).map( ( label ) => ( {
+						value: label,
+						label,
+					} ) ),
 				],
 			},
 			{
@@ -285,7 +284,7 @@ export default function FieldsDataView( {
 				isEligible: ( item ) => ! item.isBuiltIn,
 				callback: ( items ) => {
 					const item = items[ 0 ];
-					// eslint-disable-next-line no-alert
+					/* eslint-disable no-alert */
 					if (
 						window.confirm(
 							__(
@@ -296,6 +295,7 @@ export default function FieldsDataView( {
 					) {
 						onDeleteField( item._id );
 					}
+					/* eslint-enable no-alert */
 				},
 			},
 		],

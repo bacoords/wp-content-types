@@ -21,11 +21,12 @@ import { __ } from '@wordpress/i18n';
 
 /**
  * Editor Header component
- * @param root0
- * @param root0.title
- * @param root0.isSaving
- * @param root0.hasEdits
- * @param root0.onSave
+ *
+ * @param {Object}   props          Component props.
+ * @param {string}   props.title    The page title.
+ * @param {boolean}  props.isSaving Whether the post is being saved.
+ * @param {boolean}  props.hasEdits Whether there are unsaved changes.
+ * @param {Function} props.onSave   Callback when save is clicked.
  */
 function EditorHeader( { title, isSaving, hasEdits, onSave } ) {
 	return (
@@ -124,8 +125,9 @@ function EditorSidebar() {
 
 /**
  * Editor Canvas component - the main content area with fields
- * @param root0
- * @param root0.onEdit
+ *
+ * @param {Object}   props        Component props.
+ * @param {Function} props.onEdit Callback when form fields are edited.
  */
 function EditorCanvas( { onEdit } ) {
 	const [ title, setTitle ] = useState( '' );

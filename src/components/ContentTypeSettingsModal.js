@@ -7,6 +7,7 @@ import { useState, useCallback } from '@wordpress/element';
 import {
 	Modal,
 	Button,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
@@ -49,7 +50,7 @@ const settingsFields = [
 		id: 'public',
 		label: __( 'Public', 'wp-content-types' ),
 		type: 'text',
-		Edit: ( { data, field, onChange } ) => {
+		Edit: ( { data, onChange } ) => {
 			const { ToggleControl } = wp.components;
 			return (
 				<ToggleControl
@@ -162,6 +163,7 @@ export default function ContentTypeSettingsModal( {
 				window.location.href = `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ response.id }`;
 			}
 		} catch ( error ) {
+			// eslint-disable-next-line no-console
 			console.error( 'Failed to save content type:', error );
 			setIsSaving( false );
 		}

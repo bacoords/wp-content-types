@@ -12,6 +12,7 @@ import {
 	Popover,
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { Icon, chevronRight, lock, moreVertical } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useMemo, useState } from '@wordpress/element';
@@ -102,8 +103,8 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 }
 
 function EditorSidebar( {
-	contentTypeId,
-	contentTypeSlug,
+	contentTypeId: sidebarContentTypeId,
+	contentTypeSlug: sidebarContentTypeSlug,
 	fieldsManager,
 	formData,
 	isReadOnly,
@@ -113,7 +114,7 @@ function EditorSidebar( {
 } ) {
 	const adminUrl = window.wpctSettings?.adminUrl || '/wp-admin/';
 	const theme = window.wpctSettings?.theme || '';
-	const slug = contentTypeSlug;
+	const slug = sidebarContentTypeSlug;
 
 	const singleTemplateUrl = `${ adminUrl }site-editor.php?p=%2Fwp_template%2F${ theme }%2F%2Fsingle-${ slug }&canvas=edit`;
 	const archiveTemplateUrl = `${ adminUrl }site-editor.php?p=%2Fwp_template%2F${ theme }%2F%2Farchive-${ slug }&canvas=edit`;
@@ -211,6 +212,7 @@ function EditorSidebar( {
 			// Open the template in Site Editor
 			window.open( templateUrl, '_blank' );
 		} catch ( error ) {
+			// eslint-disable-next-line no-console
 			console.error( `Failed to create ${ type } template:`, error );
 		} finally {
 			setCreating( false );
@@ -219,7 +221,7 @@ function EditorSidebar( {
 
 	// Prepare content type data for the modal
 	const contentTypeForModal = {
-		id: contentTypeId,
+		id: sidebarContentTypeId,
 		name: formData.title,
 		slug: formData.slug,
 		public: formData.public,
@@ -253,6 +255,7 @@ function EditorSidebar( {
 					</div>
 					{ config.public && slug && (
 						<div className="wpct-template-links">
+							{ /* eslint-disable-next-line no-nested-ternary */ }
 							{ singleTemplateExists === null ? (
 								<Spinner />
 							) : singleTemplateExists ? (
@@ -279,6 +282,7 @@ function EditorSidebar( {
 									) }
 								</Button>
 							) }
+							{ /* eslint-disable no-nested-ternary */ }
 							{ config.has_archive &&
 								( archiveTemplateExists === null ? (
 									<Spinner />
@@ -308,6 +312,7 @@ function EditorSidebar( {
 										) }
 									</Button>
 								) ) }
+							{ /* eslint-enable no-nested-ternary */ }
 						</div>
 					) }
 				</div>
@@ -567,7 +572,7 @@ export default function App() {
 	const fieldsManager = useFieldsManager( { config, updateConfig } );
 
 	// Form data for sidebar settings
-	const { formData, handleFormChange } = useFormData( {
+	const { formData } = useFormData( {
 		record,
 		editedRecord,
 		edit,
@@ -593,6 +598,7 @@ export default function App() {
 				// Redirect to the new database record
 				window.location.href = `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ response.id }`;
 			} catch ( error ) {
+				// eslint-disable-next-line no-console
 				console.error( 'Failed to save content type:', error );
 			}
 		} else {
