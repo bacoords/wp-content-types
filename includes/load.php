@@ -27,5 +27,7 @@ require_once WPCT_PATH . 'includes/field-types/class-text.php';
 add_action( 'init', array( 'WPCT_Content_Type', 'init' ), 5 );        // Internal post type first.
 add_action( 'init', array( 'WPCT_Registry', 'init' ), 10 );           // Cache setup.
 add_action( 'init', array( 'WPCT_Post_Type_Registrar', 'init' ), 15 ); // Register user types.
-add_action( 'init', array( 'WPCT_Abilities', 'init' ), 20 );          // Register abilities (WP 6.9+).
+// Register abilities directly on the abilities API hooks (not via init).
+add_action( 'wp_abilities_api_categories_init', array( 'WPCT_Abilities', 'register_category' ) );
+add_action( 'wp_abilities_api_init', array( 'WPCT_Abilities', 'register_abilities' ) );
 add_action( 'admin_menu', array( 'WPCT_Admin', 'init' ) );

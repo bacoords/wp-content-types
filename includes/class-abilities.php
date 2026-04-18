@@ -67,7 +67,10 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::list_content_types_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_list_content_types' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 
@@ -82,7 +85,10 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::content_type_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_get_content_type' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 
@@ -97,7 +103,10 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::content_type_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_create_content_type' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 
@@ -112,7 +121,10 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::content_type_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_update_content_type' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 
@@ -127,7 +139,10 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::delete_content_type_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_delete_content_type' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 	}
@@ -138,7 +153,7 @@ class WPCT_Abilities {
 	private static function register_field_abilities() {
 		// List fields for a content type.
 		wp_register_ability(
-			'content-types/fields/list',
+			'content-types/fields-list',
 			array(
 				'label'               => __( 'List Fields', 'wp-content-types' ),
 				'description'         => __( 'List all fields for a content type.', 'wp-content-types' ),
@@ -147,13 +162,16 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::list_fields_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_list_fields' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 
 		// Add field.
 		wp_register_ability(
-			'content-types/fields/add',
+			'content-types/fields-add',
 			array(
 				'label'               => __( 'Add Field', 'wp-content-types' ),
 				'description'         => __( 'Add a field to a content type.', 'wp-content-types' ),
@@ -162,13 +180,16 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::field_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_add_field' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 
 		// Update field.
 		wp_register_ability(
-			'content-types/fields/update',
+			'content-types/fields-update',
 			array(
 				'label'               => __( 'Update Field', 'wp-content-types' ),
 				'description'         => __( 'Update a field in a content type.', 'wp-content-types' ),
@@ -177,13 +198,16 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::field_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_update_field' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 
 		// Remove field.
 		wp_register_ability(
-			'content-types/fields/remove',
+			'content-types/fields-remove',
 			array(
 				'label'               => __( 'Remove Field', 'wp-content-types' ),
 				'description'         => __( 'Remove a field from a content type.', 'wp-content-types' ),
@@ -192,7 +216,10 @@ class WPCT_Abilities {
 				'output_schema'       => WPCT_Schemas::remove_field_output(),
 				'execute_callback'    => array( __CLASS__, 'execute_remove_field' ),
 				'permission_callback' => array( __CLASS__, 'permission_callback' ),
-				'meta'                => array( 'show_in_rest' => true ),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'mcp'          => array( 'public' => true ),
+				),
 			)
 		);
 	}
