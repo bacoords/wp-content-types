@@ -1,0 +1,22 @@
+/**
+ * Block Editor Styles
+ *
+ * Styles for custom fields sidebar and editor modifications.
+ */
+
+.wpct-custom-fields-sidebar {
+	padding: 16px;
+}
+
+.wpct-custom-fields-sidebar .dataforms-layouts-panel__field-label {
+	font-weight: 500;
+	margin-bottom: 4px;
+}
+
+.wpct-custom-fields-sidebar .components-base-control {
+	margin-bottom: 16px;
+}
+
+.wpct-custom-fields-sidebar .components-base-control:last-child {
+	margin-bottom: 0;
+}
