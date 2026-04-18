@@ -1,3 +1,5 @@
+@import "@wordpress/dataviews/build-style/style.css";
+
 /**
  * Content Type Editor Styles
  */
@@ -174,222 +176,77 @@ body.is-fullscreen-mode #wpfooter {
 	margin-bottom: 0;
 }
 
-/* Fields List */
-.wpct-fields-list {
+/* Full-width tab content variant */
+.wpct-editor__tab-content--full {
+	align-items: stretch;
+}
+
+/* Fields DataView - full width */
+.wpct-fields-dataview {
 	width: 100%;
-	max-width: 600px;
+	align-self: stretch;
 }
 
-.wpct-fields-list--empty .components-card {
-	text-align: center;
-}
-
-.wpct-fields-list__empty-state p {
-	margin: 0 0 8px;
-}
-
-.wpct-fields-list__empty-hint {
-	color: #757575;
-	font-size: 13px;
-}
-
-/* Field Group Card */
-.wpct-field-group-card {
-	margin-bottom: 16px;
-}
-
-.wpct-field-group-card:last-child {
-	margin-bottom: 0;
-}
-
-.wpct-field-group-card__header {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.wpct-field-group-card__description {
-	color: #757575;
-	font-size: 13px;
-}
-
-.wpct-field-group-card__empty {
-	color: #757575;
-	font-style: italic;
-	margin: 0;
-}
-
-.wpct-field-group-card__fields {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
-/* Field Item */
-.wpct-field-item {
-	padding: 16px;
-	background: #f6f7f7;
-	border-radius: 4px;
-	cursor: pointer;
-	transition: background 0.1s, border-color 0.1s;
-	border: 2px solid transparent;
-}
-
-.wpct-field-item:hover {
-	background: #f0f0f0;
-}
-
-.wpct-field-item--selected {
-	border: 2px solid var(--wp-admin-theme-color, #007cba);
-	background: rgba(0, 124, 186, 0.04);
-}
-
-.wpct-field-item--selected:hover {
-	background: rgba(0, 124, 186, 0.08);
-}
-
-.wpct-field-item__header {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 12px;
-}
-
-.wpct-field-item__label {
-	font-weight: 600;
-}
-
-.wpct-field-item__type {
-	color: #757575;
-	font-size: 12px;
-}
-
-.wpct-field-item__required {
-	margin-left: auto;
-	font-size: 12px;
-}
-
-.wpct-field-item__required.is-required {
-	color: #d63638;
-}
-
-.wpct-field-item__required.is-optional {
-	color: #757575;
-}
-
-.wpct-field-item__preview {
-	margin-bottom: 8px;
-}
-
-.wpct-field-item__preview .components-base-control {
-	margin-bottom: 0;
-}
-
-.wpct-field-item__preview--checkbox {
-	margin-bottom: 0;
-}
-
-.wpct-field-item__preview--checkbox .components-checkbox-control {
-	margin-bottom: 0;
-}
-
-.wpct-field-item__description {
-	color: #757575;
-	font-size: 12px;
-	margin-top: 8px;
-}
-
-/* Field Preview - Date */
-.wpct-field-preview__date {
-	opacity: 0.7;
-	pointer-events: none;
-}
-
-.wpct-field-preview__date .components-datetime__date {
+/* Clickable field label in DataViews */
+.wpct-field-label-link {
+	background: none;
+	border: none;
 	padding: 0;
-}
-
-/* Field Preview - Unknown */
-.wpct-field-item__unknown {
-	padding: 12px;
-	background: #fcf0f1;
-	border: 1px solid #d63638;
-	border-radius: 2px;
-	color: #d63638;
-	font-size: 12px;
-}
-
-/* Field Group Card - Clickable Header */
-.wpct-field-group-card__header-wrapper {
+	margin: 0;
+	font: inherit;
+	font-weight: 600;
+	color: var(--wp-admin-theme-color, #007cba);
 	cursor: pointer;
-	transition: background 0.1s;
+	text-align: left;
 }
 
-.wpct-field-group-card__header-wrapper:hover {
+.wpct-field-label-link:hover {
+	color: var(--wp-admin-theme-color-darker-10, #006ba1);
+	text-decoration: underline;
+}
+
+/* JSON textarea - full width */
+.wpct-json-textarea {
+	width: 100%;
+	flex: 1;
+	font-family: monospace;
+	font-size: 13px;
+	padding: 16px;
+	border: 1px solid #ddd;
+	border-radius: 2px;
+	resize: none;
 	background: #f6f7f7;
 }
 
-.wpct-field-group-card--selected .wpct-field-group-card__header-wrapper {
-	background: rgba(0, 124, 186, 0.04);
-	border-left: 3px solid var(--wp-admin-theme-color, #007cba);
-}
-
-/* Add Field Button */
-.wpct-field-group-card__add-field {
-	margin-top: 16px;
-	padding-top: 16px;
-	border-top: 1px solid #ddd;
-}
-
-/* Add Group Button */
-.wpct-fields-list__add-group {
-	margin-top: 16px;
-	display: flex;
-	justify-content: center;
-}
-
-/* Field Editor Panel */
-.wpct-field-editor-panel {
+/* Field Editor Modal */
+.wpct-field-editor-modal .components-modal__content {
 	display: flex;
 	flex-direction: column;
-	height: 100%;
+	min-height: 400px;
 }
 
-.wpct-field-editor-panel__header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid #ddd;
-	flex-shrink: 0;
-}
-
-.wpct-field-editor-panel__header h4 {
-	margin: 0;
-}
-
-.wpct-field-editor-panel__content {
+.wpct-field-editor-modal__content {
 	flex: 1;
 	overflow-y: auto;
-	padding: 16px;
+	padding-bottom: 16px;
 }
 
-.wpct-field-editor-panel__content .dataforms-layouts__wrapper {
+.wpct-field-editor-modal__content .dataforms-layouts__wrapper {
 	width: 100%;
 }
 
-.wpct-field-editor-panel__content .components-card {
+.wpct-field-editor-modal__content .components-card {
 	margin-bottom: 16px;
 }
 
-.wpct-field-editor-panel__content .components-card:last-child {
+.wpct-field-editor-modal__content .components-card:last-child {
 	margin-bottom: 0;
 }
 
-.wpct-field-editor-panel__delete {
-	padding: 16px;
+.wpct-field-editor-modal__footer {
+	padding-top: 16px;
 	border-top: 1px solid #ddd;
-	flex-shrink: 0;
+	margin-top: auto;
 }
 
 /* Responsive */

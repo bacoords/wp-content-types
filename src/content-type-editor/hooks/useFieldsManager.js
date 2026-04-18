@@ -1,7 +1,7 @@
 /**
  * useFieldsManager hook
  *
- * Custom hook managing selection and CRUD operations for both fields and groups.
+ * Custom hook managing selection and CRUD operations for flat fields array.
  * Uses internal _id for stable selection tracking, separate from user-editable key.
  */
 import { useState, useCallback, useMemo, useRef } from '@wordpress/element';
@@ -86,278 +86,211 @@ function ensureIds( items ) {
 }
 
 /**
- * Custom hook that manages selection and CRUD for fields and groups.
+ * Migrate field_groups to flat fields array.
+ * Calculates position: (groupIndex * 1000) + (fieldIndex * 10)
+ *
+ * @param {Object} config The config object.
+ * @return {Array} Flat array of fields with positions.
+ */
+function migrateFieldGroups( config ) {
+	const fieldGroups = config.field_groups || [];
+	if ( fieldGroups.length === 0 ) {
+		return [];
+	}
+
+	const migratedFields = [];
+	fieldGroups.forEach( ( group, groupIndex ) => {
+		const groupFields = group.fields || [];
+		groupFields.forEach( ( field, fieldIndex ) => {
+			migratedFields.push( {
+				...field,
+				position: ( groupIndex * 1000 ) + ( fieldIndex * 10 ),
+			} );
+		} );
+	} );
+
+	return migratedFields;
+}
+
+/**
+ * Custom hook that manages selection and CRUD for flat fields array.
  *
  * @param {Object}   options              Hook options.
- * @param {Object}   options.config       The config object containing field_groups.
+ * @param {Object}   options.config       The config object containing fields.
  * @param {Function} options.updateConfig Function to update a config property.
  * @return {Object} Object containing selection state and CRUD methods.
  */
 export function useFieldsManager( { config, updateConfig } ) {
-	// Selection state: { type: 'field'|'group', groupId, fieldId? } or null
-	// Uses _id for stable tracking
-	const [ selection, setSelection ] = useState( null );
+	// Selection state: just the field _id or null
+	const [ selectedFieldId, setSelectedFieldId ] = useState( null );
 
 	// Ref to track if we've initialized IDs for existing items
 	const initializedRef = useRef( false );
 
-	// Get field groups with ensured _id properties
-	const fieldGroups = useMemo( () => {
-		const groups = config.field_groups || [];
-		return ensureIds( groups ).map( ( group ) => ( {
-			...group,
-			fields: ensureIds( group.fields ),
-		} ) );
-	}, [ config.field_groups ] );
+	// Get fields with ensured _id properties, migrating from field_groups if needed
+	const fields = useMemo( () => {
+		// Check for flat fields first
+		if ( Array.isArray( config.fields ) && config.fields.length > 0 ) {
+			return ensureIds( config.fields );
+		}
 
-	// Initialize IDs on first render if needed
-	if ( ! initializedRef.current && fieldGroups.length > 0 ) {
-		const originalGroups = config.field_groups || [];
-		const needsUpdate = originalGroups.some(
-			( g, i ) => ! g._id || ( g.fields || [] ).some( ( f ) => ! f._id )
-		);
+		// Migrate from field_groups if present
+		if ( Array.isArray( config.field_groups ) && config.field_groups.length > 0 ) {
+			const migrated = migrateFieldGroups( config );
+			return ensureIds( migrated );
+		}
+
+		return [];
+	}, [ config.fields, config.field_groups ] );
+
+	// Initialize IDs and migrate on first render if needed
+	if ( ! initializedRef.current && fields.length > 0 ) {
+		const originalFields = config.fields || [];
+		const hasFieldGroups = Array.isArray( config.field_groups ) && config.field_groups.length > 0;
+		const needsUpdate = hasFieldGroups || originalFields.some( ( f ) => ! f._id );
 
 		if ( needsUpdate ) {
-			// Update config with IDs added
 			initializedRef.current = true;
-			updateConfig( 'field_groups', fieldGroups );
+			updateConfig( 'fields', fields );
+			// Clean up field_groups if we migrated
+			if ( hasFieldGroups ) {
+				updateConfig( 'field_groups', undefined );
+			}
 		} else {
 			initializedRef.current = true;
 		}
 	}
 
+	// Sort fields by position
+	const sortedFields = useMemo( () => {
+		return [ ...fields ].sort( ( a, b ) => {
+			const posA = a.position ?? 0;
+			const posB = b.position ?? 0;
+			return posA - posB;
+		} );
+	}, [ fields ] );
+
 	/**
-	 * Get the currently selected data (field or group object).
+	 * Get the currently selected field object.
 	 */
-	const selectedData = useMemo( () => {
-		if ( ! selection ) {
+	const selectedField = useMemo( () => {
+		if ( ! selectedFieldId ) {
 			return null;
 		}
-
-		const group = fieldGroups.find( ( g ) => g._id === selection.groupId );
-		if ( ! group ) {
-			return null;
-		}
-
-		if ( selection.type === 'group' ) {
-			return group;
-		}
-
-		if ( selection.type === 'field' && selection.fieldId ) {
-			return ( group.fields || [] ).find(
-				( f ) => f._id === selection.fieldId
-			);
-		}
-
-		return null;
-	}, [ selection, fieldGroups ] );
+		return fields.find( ( f ) => f._id === selectedFieldId ) || null;
+	}, [ selectedFieldId, fields ] );
 
 	/**
 	 * Select a field by _id.
 	 */
-	const selectField = useCallback( ( groupId, fieldId ) => {
-		setSelection( { type: 'field', groupId, fieldId } );
-	}, [] );
-
-	/**
-	 * Select a group by _id.
-	 */
-	const selectGroup = useCallback( ( groupId ) => {
-		setSelection( { type: 'group', groupId } );
+	const selectField = useCallback( ( fieldId ) => {
+		setSelectedFieldId( fieldId );
 	}, [] );
 
 	/**
 	 * Clear selection.
 	 */
 	const clearSelection = useCallback( () => {
-		setSelection( null );
+		setSelectedFieldId( null );
 	}, [] );
 
 	/**
-	 * Update the field_groups config.
+	 * Update the fields config.
 	 */
-	const updateFieldGroups = useCallback(
-		( newGroups ) => {
-			updateConfig( 'field_groups', newGroups );
+	const updateFields = useCallback(
+		( newFields ) => {
+			updateConfig( 'fields', newFields );
 		},
 		[ updateConfig ]
 	);
 
 	/**
-	 * Update a field within a group (identified by _id).
+	 * Update a field (identified by _id).
 	 */
 	const updateField = useCallback(
-		( groupId, fieldId, edits ) => {
-			const newGroups = fieldGroups.map( ( group ) => {
-				if ( group._id !== groupId ) {
-					return group;
+		( fieldId, edits ) => {
+			const newFields = fields.map( ( field ) => {
+				if ( field._id !== fieldId ) {
+					return field;
 				}
 
-				const fields = group.fields || [];
-				const newFields = fields.map( ( field ) => {
-					if ( field._id !== fieldId ) {
-						return field;
-					}
-
-					const updatedField = { ...field, ...edits };
-
-					// If key was cleared, regenerate from label
-					if ( 'key' in edits && ! edits.key ) {
-						const labelForKey = edits.label || field.label || 'field';
-						const newKey = generateKey( labelForKey );
-						updatedField.key = makeUniqueKey( newKey, fields, fieldId );
-					}
-
-					// Handle type change - clear type-specific config
-					if ( 'type' in edits && edits.type !== field.type ) {
-						delete updatedField.options;
-						delete updatedField.config;
-					}
-
-					return updatedField;
-				} );
-
-				return { ...group, fields: newFields };
-			} );
-
-			updateFieldGroups( newGroups );
-			// No need to update selection - _id stays the same
-		},
-		[ fieldGroups, updateFieldGroups ]
-	);
-
-	/**
-	 * Add a new field to a group.
-	 */
-	const addField = useCallback(
-		( groupId ) => {
-			const group = fieldGroups.find( ( g ) => g._id === groupId );
-			if ( ! group ) {
-				return;
-			}
-
-			const fields = group.fields || [];
-			const newField = {
-				_id: generateId(),
-				key: makeUniqueKey( 'new_field', fields ),
-				label: 'New Field',
-				type: 'text',
-				required: false,
-			};
-
-			const newGroups = fieldGroups.map( ( g ) => {
-				if ( g._id !== groupId ) {
-					return g;
-				}
-				return { ...g, fields: [ ...fields, newField ] };
-			} );
-
-			updateFieldGroups( newGroups );
-			selectField( groupId, newField._id );
-		},
-		[ fieldGroups, updateFieldGroups, selectField ]
-	);
-
-	/**
-	 * Delete a field from a group.
-	 */
-	const deleteField = useCallback(
-		( groupId, fieldId ) => {
-			const newGroups = fieldGroups.map( ( group ) => {
-				if ( group._id !== groupId ) {
-					return group;
-				}
-
-				const fields = ( group.fields || [] ).filter(
-					( f ) => f._id !== fieldId
-				);
-				return { ...group, fields };
-			} );
-
-			updateFieldGroups( newGroups );
-			clearSelection();
-		},
-		[ fieldGroups, updateFieldGroups, clearSelection ]
-	);
-
-	/**
-	 * Update a group (identified by _id).
-	 */
-	const updateGroup = useCallback(
-		( groupId, edits ) => {
-			const newGroups = fieldGroups.map( ( group ) => {
-				if ( group._id !== groupId ) {
-					return group;
-				}
-
-				const updatedGroup = { ...group, ...edits };
+				const updatedField = { ...field, ...edits };
 
 				// If key was cleared, regenerate from label
 				if ( 'key' in edits && ! edits.key ) {
-					const labelForKey = edits.label || group.label || 'group';
+					const labelForKey = edits.label || field.label || 'field';
 					const newKey = generateKey( labelForKey );
-					updatedGroup.key = makeUniqueKey( newKey, fieldGroups, groupId );
+					updatedField.key = makeUniqueKey( newKey, fields, fieldId );
 				}
 
-				return updatedGroup;
+				// Handle type change - clear type-specific config
+				if ( 'type' in edits && edits.type !== field.type ) {
+					delete updatedField.options;
+					delete updatedField.config;
+				}
+
+				return updatedField;
 			} );
 
-			updateFieldGroups( newGroups );
-			// No need to update selection - _id stays the same
+			updateFields( newFields );
 		},
-		[ fieldGroups, updateFieldGroups ]
+		[ fields, updateFields ]
 	);
 
 	/**
-	 * Add a new group.
+	 * Add a new field.
 	 */
-	const addGroup = useCallback( () => {
-		const maxPosition = fieldGroups.reduce(
-			( max, g ) => Math.max( max, g.position || 0 ),
+	const addField = useCallback( () => {
+		// Calculate max position
+		const maxPosition = fields.reduce(
+			( max, f ) => Math.max( max, f.position || 0 ),
 			0
 		);
 
-		const newGroup = {
+		const newField = {
 			_id: generateId(),
-			key: makeUniqueKey( 'new_group', fieldGroups ),
-			label: 'New Group',
-			description: '',
+			key: makeUniqueKey( 'new_field', fields ),
+			label: 'New Field',
+			type: 'text',
+			required: false,
 			position: maxPosition + 10,
-			fields: [],
 		};
 
-		updateFieldGroups( [ ...fieldGroups, newGroup ] );
-		selectGroup( newGroup._id );
-	}, [ fieldGroups, updateFieldGroups, selectGroup ] );
+		updateFields( [ ...fields, newField ] );
+		setSelectedFieldId( newField._id );
+
+		return newField;
+	}, [ fields, updateFields ] );
 
 	/**
-	 * Delete a group.
+	 * Delete a field.
 	 */
-	const deleteGroup = useCallback(
-		( groupId ) => {
-			const newGroups = fieldGroups.filter( ( g ) => g._id !== groupId );
-			updateFieldGroups( newGroups );
-			clearSelection();
+	const deleteField = useCallback(
+		( fieldId ) => {
+			const newFields = fields.filter( ( f ) => f._id !== fieldId );
+			updateFields( newFields );
+
+			// Clear selection if deleted field was selected
+			if ( selectedFieldId === fieldId ) {
+				clearSelection();
+			}
 		},
-		[ fieldGroups, updateFieldGroups, clearSelection ]
+		[ fields, updateFields, selectedFieldId, clearSelection ]
 	);
 
 	return {
 		// Selection
-		selection,
-		selectedData,
+		selectedFieldId,
+		selectedField,
 		selectField,
-		selectGroup,
 		clearSelection,
 
-		// Field operations
-		updateField,
-		addField,
-		deleteField,
+		// Fields
+		fields: sortedFields,
 
-		// Group operations
-		updateGroup,
-		addGroup,
-		deleteGroup,
+		// Field operations
+		addField,
+		updateField,
+		deleteField,
 	};
 }

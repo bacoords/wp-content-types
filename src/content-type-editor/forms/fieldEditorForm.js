@@ -1,5 +1,5 @@
 /**
- * Form layout configurations for field and group editors
+ * Form layout configurations for field editor
  */
 import { __ } from '@wordpress/i18n';
 
@@ -63,17 +63,3 @@ export function getFieldEditorForm( fieldType ) {
 
 	return { fields: cards };
 }
-
-/**
- * Form layout for the group editor.
- */
-export const GROUP_EDITOR_FORM = {
-	fields: [
-		{
-			id: 'settings',
-			label: __( 'Group Settings', 'wp-content-types' ),
-			layout: { type: 'regular' },
-			children: [ 'label', 'key', 'description', 'position' ],
-		},
-	],
-};

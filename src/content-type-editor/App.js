@@ -4,24 +4,18 @@
 import { useEntityRecord } from '@wordpress/core-data';
 import {
 	Button,
-	Card,
-	CardHeader,
-	CardBody,
 	Panel,
 	PanelBody,
 	TabPanel,
 	Spinner,
 	SlotFillProvider,
 	Popover,
-	__experimentalHeading as Heading,
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
 import { Icon, chevronRight, lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useMemo, useState } from '@wordpress/element';
-import FieldsList from './components/fields/FieldsList';
-import FieldEditorPanel from './components/fields/FieldEditorPanel';
-import GroupEditorPanel from './components/fields/GroupEditorPanel';
+import FieldsDataView from './components/fields/FieldsDataView';
 import { getSettingsFields, getAdvancedFields } from './fields';
 import { SETTINGS_FORM, getAdvancedForm } from './forms';
 import { useFormData } from './hooks/useFormData';
@@ -103,39 +97,7 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 	);
 }
 
-function EditorSidebar( { fieldsManager, fieldGroups } ) {
-	const { selection, selectedData, updateField, deleteField, updateGroup, deleteGroup, clearSelection } = fieldsManager;
-
-	// Render field editor panel
-	if ( selection?.type === 'field' && selectedData ) {
-		return (
-			<div className="wpct-editor__sidebar">
-				<FieldEditorPanel
-					field={ selectedData }
-					groupId={ selection.groupId }
-					onUpdate={ updateField }
-					onDelete={ deleteField }
-					onClose={ clearSelection }
-				/>
-			</div>
-		);
-	}
-
-	// Render group editor panel
-	if ( selection?.type === 'group' && selectedData ) {
-		return (
-			<div className="wpct-editor__sidebar">
-				<GroupEditorPanel
-					group={ selectedData }
-					onUpdate={ updateGroup }
-					onDelete={ deleteGroup }
-					onClose={ clearSelection }
-				/>
-			</div>
-		);
-	}
-
-	// Default sidebar content
+function EditorSidebar() {
 	return (
 		<div className="wpct-editor__sidebar">
 			<Panel>
@@ -147,18 +109,16 @@ function EditorSidebar( { fieldsManager, fieldGroups } ) {
 	);
 }
 
-function FieldsTab( { fieldGroups, fieldsManager } ) {
-	const { selection, selectGroup, selectField, addField, addGroup } = fieldsManager;
+function FieldsTab( { fieldsManager } ) {
+	const { fields, addField, updateField, deleteField } = fieldsManager;
 
 	return (
 		<div className="wpct-editor__tab-content">
-			<FieldsList
-				fieldGroups={ fieldGroups }
-				selection={ selection }
-				onSelectGroup={ selectGroup }
-				onSelectField={ selectField }
+			<FieldsDataView
+				fields={ fields }
 				onAddField={ addField }
-				onAddGroup={ addGroup }
+				onUpdateField={ updateField }
+				onDeleteField={ deleteField }
 			/>
 		</div>
 	);
@@ -172,28 +132,12 @@ function JsonTab( { record, editedRecord, config } ) {
 	};
 
 	return (
-		<div className="wpct-editor__tab-content">
-			<Card>
-				<CardHeader>
-					<Heading level={ 3 }>{ __( 'JSON Schema', 'wp-content-types' ) }</Heading>
-				</CardHeader>
-				<CardBody>
-					<textarea
-						readOnly
-						value={ JSON.stringify( schema, null, 2 ) }
-						style={ {
-							width: '100%',
-							minHeight: '400px',
-							fontFamily: 'monospace',
-							fontSize: '13px',
-							padding: '12px',
-							border: '1px solid #ddd',
-							borderRadius: '2px',
-							resize: 'vertical',
-						} }
-					/>
-				</CardBody>
-			</Card>
+		<div className="wpct-editor__tab-content wpct-editor__tab-content--full">
+			<textarea
+				className="wpct-json-textarea"
+				readOnly
+				value={ JSON.stringify( schema, null, 2 ) }
+			/>
 		</div>
 	);
 }
@@ -272,7 +216,6 @@ function EditorContent( { record, editedRecord, edit, config, updateConfig, fiel
 						if ( tab.name === 'fields' ) {
 							return (
 								<FieldsTab
-									fieldGroups={ config.field_groups }
 									fieldsManager={ fieldsManager }
 								/>
 							);
@@ -451,10 +394,7 @@ export default function App() {
 						fieldsManager={ fieldsManager }
 						source={ source }
 					/>
-					<EditorSidebar
-						fieldsManager={ fieldsManager }
-						fieldGroups={ config.field_groups }
-					/>
+					<EditorSidebar />
 				</div>
 			</div>
 			<Popover.Slot />

@@ -1,17 +1,16 @@
 /**
- * Field Editor Panel Component
+ * Field Editor Modal Component
  *
- * Sidebar panel for editing a field using DataForm.
- * Uses local state to prevent re-renders on every keystroke.
+ * Modal dialog for editing a field using DataForm.
  */
 import {
 	Button,
-	__experimentalHeading as Heading,
+	Modal,
+	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect, useMemo, useCallback, useRef } from '@wordpress/element';
-import { close } from '@wordpress/icons';
 import { getFieldEditorFields } from '../../fields/fieldEditorFields';
 import { getFieldEditorForm } from '../../forms/fieldEditorForm';
 
@@ -91,8 +90,6 @@ function flattenField( field ) {
 		required: Boolean( field.required ),
 		description: field.description || '',
 		placeholder: field.placeholder || '',
-		// Provide defaults for all type-specific config fields
-		// to prevent DataForm crashes with undefined values
 		config_min: '',
 		config_max: '',
 		config_step: '',
@@ -102,7 +99,6 @@ function flattenField( field ) {
 	// Flatten config object - merge actual values over defaults
 	if ( field.config && typeof field.config === 'object' ) {
 		Object.entries( field.config ).forEach( ( [ key, value ] ) => {
-			// Only include defined values
 			if ( value !== undefined && value !== null ) {
 				flat[ `config_${ key }` ] = value;
 			}
@@ -153,24 +149,27 @@ function unflattenData( data ) {
 	return result;
 }
 
-export default function FieldEditorPanel( {
+export default function FieldEditorModal( {
 	field,
-	groupId,
-	onUpdate,
+	onSave,
 	onDelete,
 	onClose,
 } ) {
 	// Track which field we're editing by _id to know when to reset local state
 	const fieldIdRef = useRef( null );
 
-	// Local state for form data - prevents re-renders from parent
+	// Local state for form data
 	const [ localData, setLocalData ] = useState( () => flattenField( field ) );
 
-	// Reset local state when a DIFFERENT field is selected (by _id)
+	// Track if we have unsaved changes
+	const [ hasChanges, setHasChanges ] = useState( false );
+
+	// Reset local state when a DIFFERENT field is edited (by _id)
 	useEffect( () => {
 		if ( field?._id !== fieldIdRef.current ) {
 			fieldIdRef.current = field?._id;
 			setLocalData( flattenField( field ) );
+			setHasChanges( false );
 		}
 	}, [ field ] );
 
@@ -188,46 +187,41 @@ export default function FieldEditorPanel( {
 		[ localData.type ]
 	);
 
-	// Handle changes from DataForm - update local state immediately,
-	// then sync to parent
-	const handleChange = useCallback(
-		( edits ) => {
-			setLocalData( ( prev ) => {
-				const updated = { ...prev, ...edits };
+	// Handle changes from DataForm - update local state only
+	const handleChange = useCallback( ( edits ) => {
+		setLocalData( ( prev ) => ( { ...prev, ...edits } ) );
+		setHasChanges( true );
+	}, [] );
 
-				// Sync full data to parent (use setTimeout to avoid state update during render)
-				setTimeout( () => {
-					const unflattened = unflattenData( updated );
-					onUpdate( groupId, field._id, unflattened );
-				}, 0 );
-
-				return updated;
-			} );
-		},
-		[ groupId, field._id, onUpdate ]
-	);
+	// Handle save
+	const handleSave = useCallback( () => {
+		const unflattened = unflattenData( localData );
+		onSave( field._id, unflattened );
+		onClose();
+	}, [ localData, field._id, onSave, onClose ] );
 
 	// Handle delete
 	const handleDelete = useCallback( () => {
 		// eslint-disable-next-line no-alert
 		if ( window.confirm( __( 'Are you sure you want to delete this field?', 'wp-content-types' ) ) ) {
-			onDelete( groupId, field._id );
+			onDelete( field._id );
 		}
-	}, [ groupId, field._id, onDelete ] );
+	}, [ field._id, onDelete ] );
+
+	// Modal title
+	const isNewField = field.label === 'New Field' && field.key?.startsWith( 'new_field' );
+	const modalTitle = isNewField
+		? __( 'Add Field', 'wp-content-types' )
+		: __( 'Edit Field', 'wp-content-types' );
 
 	return (
-		<div className="wpct-field-editor-panel">
-			<div className="wpct-field-editor-panel__header">
-				<Heading level={ 4 }>
-					{ __( 'Edit Field', 'wp-content-types' ) }
-				</Heading>
-				<Button
-					icon={ close }
-					label={ __( 'Close', 'wp-content-types' ) }
-					onClick={ onClose }
-				/>
-			</div>
-			<div className="wpct-field-editor-panel__content">
+		<Modal
+			title={ modalTitle }
+			onRequestClose={ onClose }
+			className="wpct-field-editor-modal"
+			size="medium"
+		>
+			<div className="wpct-field-editor-modal__content">
 				<DataForm
 					key={ `${ field._id }-${ localData.type }` }
 					data={ localData }
@@ -236,15 +230,25 @@ export default function FieldEditorPanel( {
 					onChange={ handleChange }
 				/>
 			</div>
-			<div className="wpct-field-editor-panel__delete">
-				<Button
-					variant="secondary"
-					isDestructive
-					onClick={ handleDelete }
-				>
-					{ __( 'Delete Field', 'wp-content-types' ) }
-				</Button>
+			<div className="wpct-field-editor-modal__footer">
+				<HStack justify="space-between">
+					<Button
+						variant="tertiary"
+						isDestructive
+						onClick={ handleDelete }
+					>
+						{ __( 'Delete', 'wp-content-types' ) }
+					</Button>
+					<HStack spacing={ 3 }>
+						<Button variant="tertiary" onClick={ onClose }>
+							{ __( 'Cancel', 'wp-content-types' ) }
+						</Button>
+						<Button variant="primary" onClick={ handleSave }>
+							{ __( 'Save', 'wp-content-types' ) }
+						</Button>
+					</HStack>
+				</HStack>
 			</div>
-		</div>
+		</Modal>
 	);
 }
