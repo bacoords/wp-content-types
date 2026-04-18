@@ -1,0 +1,15 @@
+node_modules/
+src/
+.git/
+.github/
+.playwright-cli/
+webpack.config.js
+package.json
+package-lock.json
+.gitignore
+.distignore
+docs/
+.DS_Store
+*.log
+.idea/
+.vscode/

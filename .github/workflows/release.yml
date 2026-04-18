@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create distribution directory
+        run: mkdir -p dist/wp-content-types
+
+      - name: Copy files to distribution
+        run: |
+          cp wp-content-types.php dist/wp-content-types/
+          cp README.md dist/wp-content-types/
+          cp -r includes dist/wp-content-types/
+          cp -r build dist/wp-content-types/
+
+      - name: Create zip file
+        working-directory: dist
+        run: zip -r wp-content-types-${{ steps.get_version.outputs.VERSION }}.zip wp-content-types
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/wp-content-types-${{ steps.get_version.outputs.VERSION }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
