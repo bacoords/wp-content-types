@@ -13,7 +13,14 @@ import {
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Icon, chevronRight, lock, moreVertical } from '@wordpress/icons';
+import {
+	Icon,
+	chevronRight,
+	lock,
+	moreVertical,
+	post,
+	postCategories,
+} from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useMemo, useState } from '@wordpress/element';
 import FieldsDataView from './components/fields/FieldsDataView';
@@ -262,6 +269,7 @@ function EditorSidebar( {
 							) : singleTemplateExists ? (
 								<Button
 									variant="link"
+									icon={ post }
 									href={ singleTemplateUrl }
 									target="_blank"
 								>
@@ -273,6 +281,7 @@ function EditorSidebar( {
 							) : (
 								<Button
 									variant="link"
+									icon={ post }
 									onClick={ () => createTemplate( 'single' ) }
 									isBusy={ isCreatingSingle }
 									disabled={ isCreatingSingle }
@@ -290,6 +299,7 @@ function EditorSidebar( {
 								) : archiveTemplateExists ? (
 									<Button
 										variant="link"
+										icon={ postCategories }
 										href={ archiveTemplateUrl }
 										target="_blank"
 									>
@@ -301,6 +311,7 @@ function EditorSidebar( {
 								) : (
 									<Button
 										variant="link"
+										icon={ postCategories }
 										onClick={ () =>
 											createTemplate( 'archive' )
 										}
