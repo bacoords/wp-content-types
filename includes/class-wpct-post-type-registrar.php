@@ -1,12 +1,19 @@
 <?php
 /**
  * Registers user-created post types with WordPress.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Post type registrar class.
+ *
+ * Registers user-created content types as WordPress post types.
+ */
 class WPCT_Post_Type_Registrar {
 
 	/**
@@ -167,20 +174,58 @@ class WPCT_Post_Type_Registrar {
 
 		// Map field types to WordPress meta types.
 		$type_map = array(
-			'text'     => array( 'type' => 'string', 'default' => '' ),
-			'textarea' => array( 'type' => 'string', 'default' => '' ),
-			'number'   => array( 'type' => 'number', 'default' => 0 ),
-			'integer'  => array( 'type' => 'integer', 'default' => 0 ),
-			'boolean'  => array( 'type' => 'boolean', 'default' => false ),
-			'checkbox' => array( 'type' => 'boolean', 'default' => false ),
-			'select'   => array( 'type' => 'string', 'default' => '' ),
-			'email'    => array( 'type' => 'string', 'default' => '' ),
-			'url'      => array( 'type' => 'string', 'default' => '' ),
-			'date'     => array( 'type' => 'string', 'default' => '' ),
-			'image'    => array( 'type' => 'integer', 'default' => 0 ),
+			'text'     => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'textarea' => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'number'   => array(
+				'type'    => 'number',
+				'default' => 0,
+			),
+			'integer'  => array(
+				'type'    => 'integer',
+				'default' => 0,
+			),
+			'boolean'  => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'checkbox' => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'select'   => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'email'    => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'url'      => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'date'     => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'image'    => array(
+				'type'    => 'integer',
+				'default' => 0,
+			),
 		);
 
-		return $type_map[ $type ] ?? array( 'type' => 'string', 'default' => '' );
+		$default_schema = array(
+			'type'    => 'string',
+			'default' => '',
+		);
+
+		return isset( $type_map[ $type ] ) ? $type_map[ $type ] : $default_schema;
 	}
 
 	/**
@@ -291,21 +336,37 @@ class WPCT_Post_Type_Registrar {
 			'name'                  => $plural,
 			'singular_name'         => $name,
 			'add_new'               => __( 'Add New', 'wp-content-types' ),
+			/* translators: %s: Content type singular name */
 			'add_new_item'          => sprintf( __( 'Add New %s', 'wp-content-types' ), $name ),
+			/* translators: %s: Content type singular name */
 			'edit_item'             => sprintf( __( 'Edit %s', 'wp-content-types' ), $name ),
+			/* translators: %s: Content type singular name */
 			'new_item'              => sprintf( __( 'New %s', 'wp-content-types' ), $name ),
+			/* translators: %s: Content type singular name */
 			'view_item'             => sprintf( __( 'View %s', 'wp-content-types' ), $name ),
+			/* translators: %s: Content type plural name */
 			'view_items'            => sprintf( __( 'View %s', 'wp-content-types' ), $plural ),
+			/* translators: %s: Content type plural name */
 			'search_items'          => sprintf( __( 'Search %s', 'wp-content-types' ), $plural ),
+			/* translators: %s: Content type plural name (lowercase) */
 			'not_found'             => sprintf( __( 'No %s found.', 'wp-content-types' ), strtolower( $plural ) ),
+			/* translators: %s: Content type plural name (lowercase) */
 			'not_found_in_trash'    => sprintf( __( 'No %s found in Trash.', 'wp-content-types' ), strtolower( $plural ) ),
+			/* translators: %s: Content type plural name */
 			'all_items'             => sprintf( __( 'All %s', 'wp-content-types' ), $plural ),
+			/* translators: %s: Content type singular name */
 			'archives'              => sprintf( __( '%s Archives', 'wp-content-types' ), $name ),
+			/* translators: %s: Content type singular name */
 			'attributes'            => sprintf( __( '%s Attributes', 'wp-content-types' ), $name ),
+			/* translators: %s: Content type singular name (lowercase) */
 			'insert_into_item'      => sprintf( __( 'Insert into %s', 'wp-content-types' ), strtolower( $name ) ),
+			/* translators: %s: Content type singular name (lowercase) */
 			'uploaded_to_this_item' => sprintf( __( 'Uploaded to this %s', 'wp-content-types' ), strtolower( $name ) ),
+			/* translators: %s: Content type plural name (lowercase) */
 			'filter_items_list'     => sprintf( __( 'Filter %s list', 'wp-content-types' ), strtolower( $plural ) ),
+			/* translators: %s: Content type plural name */
 			'items_list_navigation' => sprintf( __( '%s list navigation', 'wp-content-types' ), $plural ),
+			/* translators: %s: Content type plural name */
 			'items_list'            => sprintf( __( '%s list', 'wp-content-types' ), $plural ),
 		);
 	}

@@ -1,12 +1,19 @@
 <?php
 /**
  * Base field type class.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Abstract base class for field types.
+ *
+ * Defines the interface for all field type implementations.
+ */
 abstract class WPCT_Field_Type {
 
 	/**
@@ -66,7 +73,7 @@ abstract class WPCT_Field_Type {
 	 * @param array $config Field config.
 	 * @return true|WP_Error
 	 */
-	public static function validate( $value, $config ) {
+	public static function validate( $value, $config ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Interface method.
 		return true;
 	}
 
@@ -76,7 +83,7 @@ abstract class WPCT_Field_Type {
 	 * @param array $config Field config.
 	 * @return array
 	 */
-	public static function get_schema( $config ) {
+	public static function get_schema( $config ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Interface method.
 		return array(
 			'type' => 'string',
 		);

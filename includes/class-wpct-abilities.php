@@ -1,12 +1,19 @@
 <?php
 /**
  * WordPress Abilities API integration.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Abilities class for WordPress Abilities API integration.
+ *
+ * Registers content type abilities for the WP Abilities API.
+ */
 class WPCT_Abilities {
 
 	/**

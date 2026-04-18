@@ -1,12 +1,19 @@
 <?php
 /**
  * Admin screens and asset loading.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Admin class for content types.
+ *
+ * Handles admin screens, menus, and asset loading.
+ */
 class WPCT_Admin {
 
 	/**
@@ -70,6 +77,7 @@ class WPCT_Admin {
 			$manage_url  = admin_url( 'admin.php?page=wp-content-type-edit&id=' . $id );
 
 			// Directly add to submenu array for external URL linking.
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Standard pattern for adding submenus.
 			$submenu[ $parent_slug ][] = array(
 				__( 'Manage', 'wp-content-types' ),
 				'manage_options',
@@ -144,7 +152,7 @@ class WPCT_Admin {
 	 */
 	public static function enqueue_assets( $hook_suffix ) {
 		$screen_map = array(
-			'toplevel_page_wp-content-types' => 'content-types',
+			'toplevel_page_wp-content-types'  => 'content-types',
 			'admin_page_wp-content-type-edit' => 'content-type-editor',
 		);
 
@@ -186,7 +194,9 @@ class WPCT_Admin {
 		);
 
 		// Pass content type ID or data when editing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- URL parameter for navigation, not a form submission.
 		if ( 'content-type-editor' === $script_name && isset( $_GET['id'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- URL parameter for navigation, not a form submission.
 			$id = sanitize_text_field( wp_unslash( $_GET['id'] ) );
 
 			// Check if this is a numeric ID (database record) or slug (hardcoded type).

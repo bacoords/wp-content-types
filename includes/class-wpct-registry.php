@@ -1,12 +1,19 @@
 <?php
 /**
  * Registry for merging hardcoded and database content type definitions.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Registry class for merging content type definitions.
+ *
+ * Merges hardcoded post types with database-defined content types.
+ */
 class WPCT_Registry {
 
 	/**
@@ -76,12 +83,12 @@ class WPCT_Registry {
 
 		foreach ( $post_types as $post_type ) {
 			// Skip our internal post type.
-			if ( $post_type->name === WPCT_Content_Type::POST_TYPE ) {
+			if ( WPCT_Content_Type::POST_TYPE === $post_type->name ) {
 				continue;
 			}
 
 			// Skip attachment (media) post type.
-			if ( $post_type->name === 'attachment' ) {
+			if ( 'attachment' === $post_type->name ) {
 				continue;
 			}
 

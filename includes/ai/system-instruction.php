@@ -4,6 +4,8 @@
  *
  * This file returns the system instruction string for the AI.
  * Variables available: $content_type_context (array with content type info)
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -11,36 +13,36 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Build a cleaner fields list for display.
-$fields_list = '';
+$wpct_fields_list = '';
 if ( ! empty( $content_type_context['fields'] ) ) {
-	$field_items = array();
-	foreach ( $content_type_context['fields'] as $field ) {
-		$key   = $field['key'] ?? 'unknown';
-		$label = $field['label'] ?? $key;
-		$type  = $field['type'] ?? 'text';
-		$field_items[] = "- {$label} (key: \"{$key}\", type: {$type})";
+	$wpct_field_items = array();
+	foreach ( $content_type_context['fields'] as $wpct_field ) {
+		$wpct_key           = $wpct_field['key'] ?? 'unknown';
+		$wpct_label         = $wpct_field['label'] ?? $wpct_key;
+		$wpct_type          = $wpct_field['type'] ?? 'text';
+		$wpct_field_items[] = "- {$wpct_label} (key: \"{$wpct_key}\", type: {$wpct_type})";
 	}
-	$fields_list = implode( "\n", $field_items );
+	$wpct_fields_list = implode( "\n", $wpct_field_items );
 } else {
-	$fields_list = '(no fields yet)';
+	$wpct_fields_list = '(no fields yet)';
 }
 
 // Build context summary.
-$context_summary = '';
-if ( $content_type_context['mode'] === 'edit' && $content_type_context['exists'] ) {
-	$context_summary = "Editing: {$content_type_context['name']} (ID: {$content_type_context['id']}, slug: {$content_type_context['slug']})";
+$wpct_context_summary = '';
+if ( 'edit' === $content_type_context['mode'] && $content_type_context['exists'] ) {
+	$wpct_context_summary = "Editing: {$content_type_context['name']} (ID: {$content_type_context['id']}, slug: {$content_type_context['slug']})";
 } else {
-	$context_summary = 'Creating a new content type';
+	$wpct_context_summary = 'Creating a new content type';
 }
 
-$instruction = <<<INSTRUCTION
+$wpct_instruction = <<<INSTRUCTION
 You are a helpful assistant for managing WordPress content types. You help users create and modify content types and their fields through natural language commands.
 
 ## Current Context
-{$context_summary}
+{$wpct_context_summary}
 
 ### Current Fields
-{$fields_list}
+{$wpct_fields_list}
 
 ## Available Abilities
 
@@ -161,4 +163,4 @@ Response:
 - Do not execute any abilities if the user's request is just a question (respond with message only)
 INSTRUCTION;
 
-return $instruction;
+return $wpct_instruction;

@@ -1,12 +1,19 @@
 <?php
 /**
  * Content Type model and storage.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Content type model and storage class.
+ *
+ * Handles CRUD operations for content types stored in the database.
+ */
 class WPCT_Content_Type {
 
 	const POST_TYPE = 'wp_content_type';
@@ -49,7 +56,8 @@ class WPCT_Content_Type {
 			'config',
 			array(
 				'get_callback'    => function ( $post ) {
-					return json_decode( get_post_field( 'post_content', $post['id'] ), true ) ?: array();
+					$decoded = json_decode( get_post_field( 'post_content', $post['id'] ), true );
+					return $decoded ? $decoded : array();
 				},
 				'update_callback' => function ( $value, $post ) {
 					wp_update_post(
@@ -93,7 +101,7 @@ class WPCT_Content_Type {
 	public static function get( $id ) {
 		$post = get_post( $id );
 
-		if ( ! $post || $post->post_type !== self::POST_TYPE ) {
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
 			return null;
 		}
 
@@ -162,11 +170,12 @@ class WPCT_Content_Type {
 	 * @return array
 	 */
 	private static function format( $post ) {
+		$config = json_decode( $post->post_content, true );
 		return array(
 			'id'     => $post->ID,
 			'name'   => $post->post_title,
 			'slug'   => $post->post_name,
-			'config' => json_decode( $post->post_content, true ) ?: array(),
+			'config' => $config ? $config : array(),
 			'source' => 'database',
 		);
 	}

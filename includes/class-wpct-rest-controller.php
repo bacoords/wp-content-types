@@ -4,12 +4,19 @@
  *
  * Extends WP_REST_Posts_Controller to return merged hardcoded + database types.
  * This follows the same pattern Gutenberg uses for wp_template.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * REST controller for content types.
+ *
+ * Extends WP_REST_Posts_Controller to return merged hardcoded + database types.
+ */
 class WPCT_REST_Controller extends WP_REST_Posts_Controller {
 
 	/**
@@ -51,7 +58,7 @@ class WPCT_REST_Controller extends WP_REST_Posts_Controller {
 		// First try to get from database.
 		$post = get_post( $id );
 
-		if ( $post && $post->post_type === WPCT_Content_Type::POST_TYPE ) {
+		if ( $post && WPCT_Content_Type::POST_TYPE === $post->post_type ) {
 			// Get merged version if it exists.
 			$merged = WPCT_Registry::get( $post->post_name );
 			if ( $merged ) {

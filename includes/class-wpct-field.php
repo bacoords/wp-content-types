@@ -1,12 +1,19 @@
 <?php
 /**
  * Field model and storage.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Field model and storage class.
+ *
+ * Handles CRUD operations for fields within content types.
+ */
 class WPCT_Field {
 
 	/**
@@ -62,9 +69,9 @@ class WPCT_Field {
 		$config['fields'] = $config['fields'] ?? array();
 
 		$config['fields'][] = array(
-			'key'   => sanitize_key( $field_data['key'] ?? '' ),
-			'label' => sanitize_text_field( $field_data['label'] ?? '' ),
-			'type'  => sanitize_key( $field_data['type'] ?? 'text' ),
+			'key'    => sanitize_key( $field_data['key'] ?? '' ),
+			'label'  => sanitize_text_field( $field_data['label'] ?? '' ),
+			'type'   => sanitize_key( $field_data['type'] ?? 'text' ),
 			'config' => $field_data['config'] ?? array(),
 		);
 

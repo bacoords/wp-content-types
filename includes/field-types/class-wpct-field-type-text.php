@@ -1,12 +1,19 @@
 <?php
 /**
  * Text field type.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Text field type class.
+ *
+ * Implements a basic text input field type.
+ */
 class WPCT_Field_Type_Text extends WPCT_Field_Type {
 
 	/**

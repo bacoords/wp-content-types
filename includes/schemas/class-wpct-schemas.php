@@ -1,12 +1,19 @@
 <?php
 /**
  * JSON Schema definitions for content type abilities.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * JSON Schema definitions class.
+ *
+ * Provides JSON Schema definitions for content type abilities.
+ */
 class WPCT_Schemas {
 
 	/**

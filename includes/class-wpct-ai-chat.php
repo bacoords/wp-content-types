@@ -3,12 +3,19 @@
  * AI Chat REST API endpoint.
  *
  * Provides a chat interface that uses WordPress AI Client to execute abilities.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * AI Chat class for REST API endpoint.
+ *
+ * Provides a chat interface that uses WordPress AI Client to execute abilities.
+ */
 class WPCT_AI_Chat {
 
 	/**

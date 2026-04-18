@@ -1,6 +1,8 @@
 <?php
 /**
  * Master loader for WP Content Types.
+ *
+ * @package WP_Content_Types
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -8,23 +10,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Core classes.
-require_once WPCT_PATH . 'includes/class-content-type.php';
-require_once WPCT_PATH . 'includes/class-field.php';
-require_once WPCT_PATH . 'includes/class-registry.php';
-require_once WPCT_PATH . 'includes/class-rest-controller.php';
-require_once WPCT_PATH . 'includes/class-post-type-registrar.php';
-require_once WPCT_PATH . 'includes/class-admin.php';
+require_once WPCT_PATH . 'includes/class-wpct-content-type.php';
+require_once WPCT_PATH . 'includes/class-wpct-field.php';
+require_once WPCT_PATH . 'includes/class-wpct-registry.php';
+require_once WPCT_PATH . 'includes/class-wpct-rest-controller.php';
+require_once WPCT_PATH . 'includes/class-wpct-post-type-registrar.php';
+require_once WPCT_PATH . 'includes/class-wpct-admin.php';
 
 // Abilities API (WP 6.9+).
-require_once WPCT_PATH . 'includes/schemas/content-type.php';
-require_once WPCT_PATH . 'includes/class-abilities.php';
+require_once WPCT_PATH . 'includes/schemas/class-wpct-schemas.php';
+require_once WPCT_PATH . 'includes/class-wpct-abilities.php';
 
 // AI Chat (WP 7.0+).
-require_once WPCT_PATH . 'includes/class-ai-chat.php';
+require_once WPCT_PATH . 'includes/class-wpct-ai-chat.php';
 
 // Field types.
-require_once WPCT_PATH . 'includes/field-types/class-field-type.php';
-require_once WPCT_PATH . 'includes/field-types/class-text.php';
+require_once WPCT_PATH . 'includes/field-types/class-wpct-field-type.php';
+require_once WPCT_PATH . 'includes/field-types/class-wpct-field-type-text.php';
 
 // Initialize with priorities to ensure proper ordering.
 add_action( 'init', array( 'WPCT_Content_Type', 'init' ), 5 );        // Internal post type first.
