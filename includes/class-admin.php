@@ -182,6 +182,7 @@ class WPCT_Admin {
 		$settings = array(
 			'nonce'    => wp_create_nonce( 'wp_rest' ),
 			'adminUrl' => admin_url(),
+			'theme'    => get_stylesheet(),
 		);
 
 		// Pass content type ID or data when editing.

@@ -123,7 +123,103 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 	);
 }
 
-function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formData, handleFormChange, isReadOnly } ) {
+function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formData, handleFormChange, isReadOnly, config, title } ) {
+	const adminUrl = window.wpctSettings?.adminUrl || '/wp-admin/';
+	const theme = window.wpctSettings?.theme || '';
+	const slug = contentTypeSlug;
+
+	const singleTemplateUrl = `${ adminUrl }site-editor.php?p=%2Fwp_template%2F${ theme }%2F%2Fsingle-${ slug }&canvas=edit`;
+	const archiveTemplateUrl = `${ adminUrl }site-editor.php?p=%2Fwp_template%2F${ theme }%2F%2Farchive-${ slug }&canvas=edit`;
+
+	// Template existence state
+	const [ singleTemplateExists, setSingleTemplateExists ] = useState( null );
+	const [ archiveTemplateExists, setArchiveTemplateExists ] = useState( null );
+	const [ isCreatingSingle, setIsCreatingSingle ] = useState( false );
+	const [ isCreatingArchive, setIsCreatingArchive ] = useState( false );
+
+	// Check if templates exist
+	useEffect( () => {
+		if ( ! config.public || ! slug || ! theme ) {
+			return;
+		}
+
+		const checkTemplates = async () => {
+			try {
+				// Check single template
+				const singleResponse = await window.wp.apiFetch( {
+					path: `/wp/v2/templates/${ theme }//single-${ slug }`,
+					method: 'GET',
+				} );
+				setSingleTemplateExists( !! singleResponse?.id );
+			} catch {
+				setSingleTemplateExists( false );
+			}
+
+			try {
+				// Check archive template
+				const archiveResponse = await window.wp.apiFetch( {
+					path: `/wp/v2/templates/${ theme }//archive-${ slug }`,
+					method: 'GET',
+				} );
+				setArchiveTemplateExists( !! archiveResponse?.id );
+			} catch {
+				setArchiveTemplateExists( false );
+			}
+		};
+
+		checkTemplates();
+	}, [ config.public, slug, theme ] );
+
+	// Create template with default content from fallback template
+	const createTemplate = async ( type ) => {
+		const isArchive = type === 'archive';
+		const setCreating = isArchive ? setIsCreatingArchive : setIsCreatingSingle;
+		const setExists = isArchive ? setArchiveTemplateExists : setSingleTemplateExists;
+		const fallbackSlug = isArchive ? 'archive' : 'single';
+		const newSlug = isArchive ? `archive-${ slug }` : `single-${ slug }`;
+		const templateUrl = isArchive ? archiveTemplateUrl : singleTemplateUrl;
+
+		setCreating( true );
+
+		try {
+			// Fetch the default template content
+			let defaultContent = '';
+			try {
+				const defaultTemplate = await window.wp.apiFetch( {
+					path: `/wp/v2/templates/${ theme }//${ fallbackSlug }`,
+					method: 'GET',
+				} );
+				defaultContent = defaultTemplate?.content?.raw || '';
+			} catch {
+				// Fallback content if default template doesn't exist
+				defaultContent = isArchive
+					? '<!-- wp:query --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title /--><!-- wp:post-excerpt /--><!-- /wp:post-template --></div><!-- /wp:query -->'
+					: '<!-- wp:post-content /-->';
+			}
+
+			// Create the new template
+			await window.wp.apiFetch( {
+				path: '/wp/v2/templates',
+				method: 'POST',
+				data: {
+					slug: newSlug,
+					title: isArchive ? `Archive: ${ title }` : `Single: ${ title }`,
+					content: defaultContent,
+					status: 'publish',
+				},
+			} );
+
+			setExists( true );
+
+			// Open the template in Site Editor
+			window.open( templateUrl, '_blank' );
+		} catch ( error ) {
+			console.error( `Failed to create ${ type } template:`, error );
+		} finally {
+			setCreating( false );
+		}
+	};
+
 	return (
 		<div className="wpct-editor__sidebar">
 			{ ! isReadOnly && (
@@ -135,6 +231,44 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 							form={ SIDEBAR_SETTINGS_FORM }
 							onChange={ handleFormChange }
 						/>
+						{ config.public && slug && (
+							<div className="wpct-template-links">
+								{ singleTemplateExists === null ? (
+									<Spinner />
+								) : singleTemplateExists ? (
+									<Button variant="link" href={ singleTemplateUrl } target="_blank">
+										{ __( 'Edit Single Template', 'wp-content-types' ) }
+									</Button>
+								) : (
+									<Button
+										variant="link"
+										onClick={ () => createTemplate( 'single' ) }
+										isBusy={ isCreatingSingle }
+										disabled={ isCreatingSingle }
+									>
+										{ __( 'Create Single Template', 'wp-content-types' ) }
+									</Button>
+								) }
+								{ config.has_archive && (
+									archiveTemplateExists === null ? (
+										<Spinner />
+									) : archiveTemplateExists ? (
+										<Button variant="link" href={ archiveTemplateUrl } target="_blank">
+											{ __( 'Edit Archive Template', 'wp-content-types' ) }
+										</Button>
+									) : (
+										<Button
+											variant="link"
+											onClick={ () => createTemplate( 'archive' ) }
+											isBusy={ isCreatingArchive }
+											disabled={ isCreatingArchive }
+										>
+											{ __( 'Create Archive Template', 'wp-content-types' ) }
+										</Button>
+									)
+								) }
+							</div>
+						) }
 					</PanelBody>
 				</Panel>
 			) }
@@ -448,6 +582,8 @@ export default function App() {
 						formData={ formData }
 						handleFormChange={ handleFormChange }
 						isReadOnly={ isReadOnly }
+						config={ config }
+						title={ title }
 					/>
 				</div>
 			</div>

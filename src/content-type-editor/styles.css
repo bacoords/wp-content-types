@@ -466,6 +466,16 @@ body.is-fullscreen-mode #wpfooter {
 	margin-bottom: 0;
 }
 
+/* Template links in sidebar */
+.wpct-template-links {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
 	.wpct-editor__body {
