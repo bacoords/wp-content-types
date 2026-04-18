@@ -1,180 +1,149 @@
 /**
- * Custom Fields Sidebar Component
+ * Custom Fields Panel Component
  *
- * Displays a DataForm with custom fields in a dedicated sidebar,
- * or as a full canvas editor when block editor is disabled.
+ * Displays a full canvas DataForm editor for custom fields.
+ * When block editor is disabled, always shows the canvas.
+ * When block editor is enabled, provides a toggle button in the header toolbar.
  */
 
-import { PluginSidebar, PluginSidebarMoreMenuItem } from '@wordpress/editor';
-import { useEntityProp } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
-import { useMemo, useCallback } from '@wordpress/element';
-import { DataForm } from '@wordpress/dataviews';
+/* global MutationObserver */
+
+import { PluginMoreMenuItem } from '@wordpress/editor';
+import { useState, useMemo, useEffect, createPortal } from '@wordpress/element';
+import { Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { blockMeta } from '@wordpress/icons';
 import FullCanvasEditor from './FullCanvasEditor';
 
-const SIDEBAR_NAME = 'wpct-custom-fields-sidebar';
-
 /**
- * Map field type to DataForm field type.
+ * Header Toolbar Button Component
  *
- * @param {string} type The content type field type.
- * @return {string} The DataForm field type.
- */
-function mapFieldType( type ) {
-	const typeMap = {
-		text: 'text',
-		textarea: 'textarea',
-		number: 'integer',
-		email: 'text',
-		url: 'text',
-		date: 'datetime',
-		select: 'text',
-		radio: 'text',
-		checkbox: 'text',
-	};
-
-	return typeMap[ type ] || 'text';
-}
-
-/**
- * Build DataForm fields from content type fields.
+ * Renders a toggle button in the editor header toolbar via portal.
  *
- * @param {Array} fields The content type fields.
- * @return {Array} DataForm field definitions.
+ * @param {Object}   props          Component props.
+ * @param {boolean}  props.isActive Whether the canvas mode is active.
+ * @param {Function} props.onClick  Click handler for the toggle.
  */
-function buildDataFormFields( fields ) {
-	return fields.map( ( field ) => {
-		const dataFormField = {
-			id: field.key,
-			label: field.label || field.key,
-			type: mapFieldType( field.type ),
+function HeaderToolbarButton( { isActive, onClick } ) {
+	const [ container, setContainer ] = useState( null );
+
+	useEffect( () => {
+		const findToolbar = () => {
+			// Try to find the header toolbar area.
+			const selectors = [
+				'.editor-header__toolbar',
+				'.edit-post-header__toolbar',
+				'.editor-document-tools',
+			];
+
+			for ( const selector of selectors ) {
+				const toolbar = document.querySelector( selector );
+				if ( toolbar ) {
+					// Create container for our button if it doesn't exist.
+					let buttonContainer = toolbar.querySelector(
+						'.wpct-toolbar-button-container'
+					);
+					if ( ! buttonContainer ) {
+						buttonContainer = document.createElement( 'div' );
+						buttonContainer.className =
+							'wpct-toolbar-button-container';
+						toolbar.appendChild( buttonContainer );
+					}
+					return buttonContainer;
+				}
+			}
+			return null;
 		};
 
-		// Add description if present
-		if ( field.description ) {
-			dataFormField.description = field.description;
+		// Try to find toolbar immediately.
+		let toolbarContainer = findToolbar();
+		if ( toolbarContainer ) {
+			setContainer( toolbarContainer );
+			return;
 		}
 
-		// Add placeholder if present
-		if ( field.placeholder ) {
-			dataFormField.placeholder = field.placeholder;
-		}
+		// If not found, observe DOM for changes.
+		const observer = new MutationObserver( () => {
+			toolbarContainer = findToolbar();
+			if ( toolbarContainer ) {
+				setContainer( toolbarContainer );
+				observer.disconnect();
+			}
+		} );
 
-		// Handle select/radio with options
-		if (
-			( field.type === 'select' || field.type === 'radio' ) &&
-			Array.isArray( field.options )
-		) {
-			dataFormField.elements = field.options.map( ( opt ) => ( {
-				value: opt.value,
-				label: opt.label,
-			} ) );
-		}
+		observer.observe( document.body, {
+			childList: true,
+			subtree: true,
+		} );
 
-		return dataFormField;
-	} );
+		return () => observer.disconnect();
+	}, [] );
+
+	if ( ! container ) {
+		return null;
+	}
+
+	const label = isActive
+		? __( 'Hide Custom Fields', 'wp-content-types' )
+		: __( 'Show Custom Fields', 'wp-content-types' );
+
+	return createPortal(
+		<Button
+			icon={ blockMeta }
+			label={ label }
+			onClick={ onClick }
+			isPressed={ isActive }
+			className="wpct-toolbar-toggle"
+		/>,
+		container
+	);
 }
 
-/**
- * Build DataForm form layout from content type fields.
- *
- * @param {Array} fields The content type fields.
- * @return {Object} DataForm form layout.
- */
-function buildFormLayout( fields ) {
-	return {
-		type: 'regular',
-		fields: fields.map( ( field ) => field.key ),
-	};
-}
-
-export default function CustomFieldsSidebar() {
+export default function CustomFieldsPanel() {
 	const contentType = window.wpctEditorSettings?.contentType;
 	const useBlockEditor = window.wpctEditorSettings?.useBlockEditor ?? true;
 
-	// Memoize fields to prevent unnecessary re-renders
+	// Track whether canvas mode is active (for block editor post types).
+	const [ isCanvasMode, setIsCanvasMode ] = useState( false );
+
+	// Memoize fields to prevent unnecessary re-renders.
 	const contentTypeFields = useMemo(
 		() => contentType?.config?.fields || [],
 		[ contentType ]
 	);
 
-	// If block editor is disabled, render full canvas mode
+	// If block editor is disabled, always render full canvas mode.
 	if ( ! useBlockEditor ) {
 		return <FullCanvasEditor />;
 	}
 
-	// Get current post type
-	const postType = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPostType();
-	}, [] );
-
-	// Get and set meta values
-	const [ meta, setMeta ] = useEntityProp( 'postType', postType, 'meta' );
-
-	// Build form data from meta
-	const formData = useMemo( () => {
-		const data = {};
-		contentTypeFields.forEach( ( field ) => {
-			data[ field.key ] = meta?.[ field.key ] ?? '';
-		} );
-		return data;
-	}, [ meta, contentTypeFields ] );
-
-	// Build DataForm fields
-	const dataFormFields = useMemo(
-		() => buildDataFormFields( contentTypeFields ),
-		[ contentTypeFields ]
-	);
-
-	// Build form layout
-	const formLayout = useMemo(
-		() => buildFormLayout( contentTypeFields ),
-		[ contentTypeFields ]
-	);
-
-	// Handle form changes
-	const handleChange = useCallback(
-		( edits ) => {
-			setMeta( {
-				...meta,
-				...edits,
-			} );
-		},
-		[ meta, setMeta ]
-	);
-
-	// Don't render if no fields
+	// Don't render anything if no fields.
 	if ( contentTypeFields.length === 0 ) {
 		return null;
 	}
 
-	const sidebarTitle =
-		contentType?.name || __( 'Custom Fields', 'wp-content-types' );
+	const toggleLabel = isCanvasMode
+		? __( 'Hide Custom Fields', 'wp-content-types' )
+		: __( 'Show Custom Fields', 'wp-content-types' );
 
 	return (
 		<>
-			<PluginSidebarMoreMenuItem
-				target={ SIDEBAR_NAME }
+			{ /* Toggle button in the header toolbar */ }
+			<HeaderToolbarButton
+				isActive={ isCanvasMode }
+				onClick={ () => setIsCanvasMode( ! isCanvasMode ) }
+			/>
+
+			{ /* Toggle in Tools menu */ }
+			<PluginMoreMenuItem
 				icon={ blockMeta }
+				onClick={ () => setIsCanvasMode( ! isCanvasMode ) }
 			>
-				{ sidebarTitle }
-			</PluginSidebarMoreMenuItem>
-			<PluginSidebar
-				name={ SIDEBAR_NAME }
-				title={ sidebarTitle }
-				icon={ blockMeta }
-			>
-				<div className="wpct-custom-fields-sidebar">
-					<DataForm
-						data={ formData }
-						fields={ dataFormFields }
-						form={ formLayout }
-						onChange={ handleChange }
-					/>
-				</div>
-			</PluginSidebar>
+				{ toggleLabel }
+			</PluginMoreMenuItem>
+
+			{ /* Show full canvas editor when in canvas mode */ }
+			{ isCanvasMode && <FullCanvasEditor includeTitle={ false } /> }
 		</>
 	);
 }

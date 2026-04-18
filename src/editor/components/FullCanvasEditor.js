@@ -77,7 +77,7 @@ function buildDataFormFields( fields ) {
 	} );
 }
 
-export default function FullCanvasEditor() {
+export default function FullCanvasEditor( { includeTitle = true } ) {
 	const contentType = window.wpctEditorSettings?.contentType;
 	const [ portalContainer, setPortalContainer ] = useState( null );
 
@@ -86,8 +86,11 @@ export default function FullCanvasEditor() {
 		[ contentType ]
 	);
 
-	// Check if the content type supports title.
+	// Check if the content type supports title and we should include it.
 	const supportsTitle = useMemo( () => {
+		if ( ! includeTitle ) {
+			return false;
+		}
 		const supports = contentType?.config?.supports || [
 			'title',
 			'editor',
@@ -95,7 +98,7 @@ export default function FullCanvasEditor() {
 			'custom-fields',
 		];
 		return supports.includes( 'title' );
-	}, [ contentType ] );
+	}, [ contentType, includeTitle ] );
 
 	const postType = useSelect( ( select ) => {
 		return select( 'core/editor' ).getCurrentPostType();
