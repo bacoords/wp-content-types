@@ -1,8 +1,14 @@
 /**
  * Content Types List App
  */
-import { useState, useEffect } from '@wordpress/element';
-import { useEntityRecords } from '@wordpress/core-data';
+import { useState, useEffect, useCallback, useMemo } from '@wordpress/element';
+import {
+	useEntityRecords,
+	useEntityRecord,
+	store as coreStore,
+} from '@wordpress/core-data';
+import { useDispatch } from '@wordpress/data';
+import { useFieldsManager } from '../content-type-editor/hooks/useFieldsManager';
 import { DataViews } from '@wordpress/dataviews';
 import {
 	Button,
@@ -16,6 +22,7 @@ import { lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import ContentTypeSettingsModal from '../components/ContentTypeSettingsModal';
 import Badge from '../components/Badge';
+import AIChat from '../components/AIChat';
 
 function getEditUrl( item ) {
 	// For hardcoded types without a database ID, use slug.
@@ -195,13 +202,33 @@ function ListHeader( { onAddNew } ) {
 	);
 }
 
-function ListSidebar() {
+function ListSidebar( {
+	sessionContentType,
+	fieldsManager,
+	onContentTypeCreated,
+} ) {
+	// Determine mode based on whether we have a session content type.
+	const mode = sessionContentType ? 'edit' : 'create';
+
 	return (
 		<div className="wpct-list__sidebar">
 			<Panel>
 				<PanelBody
-					title={ __( 'About', 'wp-content-types' ) }
+					title={ __( 'AI Assistant', 'wp-content-types' ) }
 					initialOpen={ true }
+				>
+					<AIChat
+						mode={ mode }
+						contentTypeId={ sessionContentType?.id }
+						contentTypeSlug={ sessionContentType?.slug }
+						fieldsManager={ fieldsManager }
+						currentFields={ fieldsManager?.fields || [] }
+						onContentTypeCreated={ onContentTypeCreated }
+					/>
+				</PanelBody>
+				<PanelBody
+					title={ __( 'About', 'wp-content-types' ) }
+					initialOpen={ false }
 				>
 					<p>
 						{ __(
@@ -250,6 +277,71 @@ export default function App() {
 
 	const [ isAddModalOpen, setIsAddModalOpen ] = useState( false );
 
+	// Track the content type created in this session for field management.
+	const [ sessionContentTypeId, setSessionContentTypeId ] = useState( null );
+
+	const { invalidateResolution } = useDispatch( coreStore );
+
+	// Load the session content type if we have one.
+	const {
+		record: sessionContentType,
+		editedRecord,
+		edit: editEntity,
+	} = useEntityRecord( 'postType', 'wp_content_type', sessionContentTypeId );
+
+	// Create updateConfig function for fieldsManager.
+	const updateConfig = useCallback(
+		( key, value ) => {
+			if ( ! sessionContentTypeId ) {
+				return;
+			}
+			const currentConfig =
+				editedRecord?.config || sessionContentType?.config || {};
+			editEntity( {
+				config: {
+					...currentConfig,
+					[ key ]: value,
+				},
+			} );
+		},
+		[ sessionContentTypeId, editedRecord, sessionContentType, editEntity ]
+	);
+
+	// Get the current config for fieldsManager.
+	const currentConfig = useMemo( () => {
+		return editedRecord?.config || sessionContentType?.config || {};
+	}, [ editedRecord, sessionContentType ] );
+
+	// Create fieldsManager for the session content type.
+	const fieldsManager = useFieldsManager( {
+		config: currentConfig,
+		updateConfig,
+	} );
+
+	// Only provide fieldsManager when we have a session content type.
+	const activeFieldsManager = sessionContentTypeId ? fieldsManager : null;
+
+	/**
+	 * Handle content type creation from AI Chat.
+	 * Refresh the data view and track the content type for field management.
+	 */
+	const handleContentTypeCreated = useCallback(
+		( contentType ) => {
+			// Track this content type for field management.
+			if ( contentType?.id ) {
+				setSessionContentTypeId( contentType.id );
+			}
+
+			// Invalidate the entity records cache to trigger a refetch.
+			invalidateResolution( 'getEntityRecords', [
+				'postType',
+				'wp_content_type',
+				{ per_page: -1, status: 'publish' },
+			] );
+		},
+		[ invalidateResolution ]
+	);
+
 	useEffect( () => {
 		document.body.classList.add( 'is-fullscreen-mode' );
 		return () => {
@@ -268,7 +360,11 @@ export default function App() {
 						view={ view }
 						onChangeView={ setView }
 					/>
-					<ListSidebar />
+					<ListSidebar
+						sessionContentType={ sessionContentType }
+						fieldsManager={ activeFieldsManager }
+						onContentTypeCreated={ handleContentTypeCreated }
+					/>
 				</div>
 			</div>
 			<ContentTypeSettingsModal

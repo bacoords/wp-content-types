@@ -53,6 +53,9 @@ function AppliedChange( { ability, success, error } ) {
 		if ( ability.ability_id === 'content-types/fields-update' ) {
 			return input.field_key;
 		}
+		if ( ability.ability_id === 'content-types/create' ) {
+			return input.name || input.slug;
+		}
 		return '';
 	};
 
@@ -74,11 +77,24 @@ function AppliedChange( { ability, success, error } ) {
 	);
 }
 
+/**
+ * AI Chat Component
+ *
+ * @param {Object}   props                      Component props.
+ * @param {string}   props.mode                 Mode: 'create' for new content types, 'edit' for existing.
+ * @param {number}   props.contentTypeId        ID of content type being edited (edit mode only).
+ * @param {string}   props.contentTypeSlug      Slug of content type being edited (edit mode only).
+ * @param {Object}   props.fieldsManager        Hook for field CRUD operations (edit mode only).
+ * @param {Array}    props.currentFields        Current fields array for context.
+ * @param {Function} props.onContentTypeCreated Callback when a new content type is created (create mode).
+ */
 export default function AIChat( {
+	mode = 'edit',
 	contentTypeId,
 	contentTypeSlug,
 	fieldsManager,
 	currentFields = [],
+	onContentTypeCreated,
 } ) {
 	const [ messages, setMessages ] = useState( [] );
 	const [ inputValue, setInputValue ] = useState( '' );
@@ -123,9 +139,10 @@ export default function AIChat( {
 	}, [ messages ] );
 
 	/**
-	 * Apply an ability to the local state.
+	 * Apply a field-related ability to the local state.
+	 * Returns synchronous result for field operations.
 	 */
-	const applyAbility = useCallback(
+	const applyFieldAbility = useCallback(
 		( ability ) => {
 			const { ability_id: abilityId, input } = ability;
 
@@ -229,6 +246,48 @@ export default function AIChat( {
 		[ fieldsManager ]
 	);
 
+	/**
+	 * Create a new content type via the REST API.
+	 * Returns the created content type data.
+	 */
+	const createContentType = useCallback( async ( input ) => {
+		try {
+			// Build the content type data.
+			const contentTypeData = {
+				title: input.name,
+				slug: input.slug,
+				status: 'publish',
+				config: {
+					public: input.config?.public ?? true,
+					has_archive: input.config?.has_archive ?? true,
+					supports: input.config?.supports ?? [
+						'title',
+						'editor',
+						'thumbnail',
+						'custom-fields',
+					],
+					fields: input.fields || [],
+					...( input.config || {} ),
+				},
+			};
+
+			const response = await apiFetch( {
+				path: '/wp/v2/content-types',
+				method: 'POST',
+				data: contentTypeData,
+			} );
+
+			return { success: true, data: response };
+		} catch ( err ) {
+			return {
+				success: false,
+				error:
+					err.message ||
+					__( 'Failed to create content type', 'wp-content-types' ),
+			};
+		}
+	}, [] );
+
 	const handleSubmit = async ( e ) => {
 		e?.preventDefault();
 
@@ -248,25 +307,32 @@ export default function AIChat( {
 		setIsLoading( true );
 
 		try {
-			// Prepare current fields for context (strip internal _id)
+			// Prepare current fields for context (strip internal _id).
 			const fieldsForContext = ( currentFields || [] ).map( ( f ) => ( {
 				key: f.key,
 				label: f.label,
 				type: f.type,
 			} ) );
 
+			// Build request data based on mode.
+			const requestData = {
+				message: trimmedInput,
+				context: {
+					currentFields: fieldsForContext,
+				},
+			};
+
+			// In edit mode, include content type info.
+			if ( mode === 'edit' && ( contentTypeId || contentTypeSlug ) ) {
+				requestData.content_type_id = contentTypeId || contentTypeSlug;
+				requestData.context.contentTypeId = contentTypeId;
+				requestData.context.contentTypeSlug = contentTypeSlug;
+			}
+
 			const response = await apiFetch( {
 				path: '/wp-content-types/v1/ai/chat',
 				method: 'POST',
-				data: {
-					message: trimmedInput,
-					content_type_id: contentTypeId || contentTypeSlug,
-					context: {
-						contentTypeId,
-						contentTypeSlug,
-						currentFields: fieldsForContext,
-					},
-				},
+				data: requestData,
 			} );
 
 			// Check if response indicates an error.
@@ -280,20 +346,70 @@ export default function AIChat( {
 			// Batch field additions to handle multiple at once.
 			const appliedChanges = [];
 			const fieldsToAdd = [];
-			const otherAbilities = [];
+			const fieldAbilities = [];
+			const createAbilities = [];
 
-			// Separate field additions from other abilities
+			// Separate abilities by type.
 			if ( response.abilities?.length > 0 ) {
 				for ( const ability of response.abilities ) {
 					if ( ability.ability_id === 'content-types/fields-add' ) {
 						fieldsToAdd.push( ability );
-					} else {
-						otherAbilities.push( ability );
+					} else if (
+						ability.ability_id === 'content-types/create'
+					) {
+						createAbilities.push( ability );
+					} else if (
+						ability.ability_id.startsWith( 'content-types/fields-' )
+					) {
+						fieldAbilities.push( ability );
 					}
 				}
 			}
 
-			// Batch add all fields at once
+			// Handle content type creation first.
+			// If we're also adding fields, include them in the content type config.
+			let createdContentType = null;
+			for ( const ability of createAbilities ) {
+				const input = { ...ability.input };
+
+				// In create mode, include any fields-add abilities in the config.
+				if ( mode === 'create' && fieldsToAdd.length > 0 ) {
+					const fieldsForConfig = fieldsToAdd.map(
+						( fieldAbility ) => ( {
+							key: fieldAbility.input.key,
+							label:
+								fieldAbility.input.label ||
+								fieldAbility.input.key,
+							type: fieldAbility.input.type || 'text',
+							config: fieldAbility.input.config || {},
+						} )
+					);
+					input.config = input.config || {};
+					input.config.fields = [
+						...( input.config.fields || [] ),
+						...fieldsForConfig,
+					];
+				}
+
+				const result = await createContentType( input );
+				appliedChanges.push( { ability, ...result } );
+				if ( result.success && result.data ) {
+					createdContentType = result.data;
+					// Mark field abilities as successful since they were included.
+					if ( mode === 'create' ) {
+						for ( const fieldAbility of fieldsToAdd ) {
+							appliedChanges.push( {
+								ability: fieldAbility,
+								success: true,
+							} );
+						}
+						// Clear fieldsToAdd so we don't try to add them again.
+						fieldsToAdd.length = 0;
+					}
+				}
+			}
+
+			// Batch add all fields at once using fieldsManager.
 			if ( fieldsToAdd.length > 0 && fieldsManager?.addFields ) {
 				try {
 					const fieldDataArray = fieldsToAdd.map( ( ability ) => ( {
@@ -303,7 +419,7 @@ export default function AIChat( {
 						config: ability.input.config || {},
 					} ) );
 					fieldsManager.addFields( fieldDataArray );
-					// Mark all as successful
+					// Mark all as successful.
 					for ( const ability of fieldsToAdd ) {
 						appliedChanges.push( { ability, success: true } );
 					}
@@ -317,22 +433,28 @@ export default function AIChat( {
 					}
 				}
 			} else if ( fieldsToAdd.length > 0 ) {
+				// No fieldsManager available - can't add fields.
 				for ( const ability of fieldsToAdd ) {
 					appliedChanges.push( {
 						ability,
 						success: false,
 						error: __(
-							'Field manager not available',
+							'Create a content type first, then add fields',
 							'wp-content-types'
 						),
 					} );
 				}
 			}
 
-			// Handle other abilities individually
-			for ( const ability of otherAbilities ) {
-				const result = applyAbility( ability );
+			// Handle other field abilities individually.
+			for ( const ability of fieldAbilities ) {
+				const result = applyFieldAbility( ability );
 				appliedChanges.push( { ability, ...result } );
+			}
+
+			// If a content type was created, notify via callback.
+			if ( createdContentType && onContentTypeCreated ) {
+				onContentTypeCreated( createdContentType );
 			}
 
 			// Add assistant message with applied changes.
@@ -374,25 +496,51 @@ export default function AIChat( {
 			<div className="wpct-chat__messages">
 				{ messages.length === 0 && (
 					<div className="wpct-chat__empty">
-						<p>
-							{ __(
-								'Ask me to create or modify fields.',
-								'wp-content-types'
-							) }
-						</p>
-						<p className="wpct-chat__examples">
-							{ __( 'Try:', 'wp-content-types' ) }
-							<br />
-							{ __(
-								'"Add a text field called Author Name"',
-								'wp-content-types'
-							) }
-							<br />
-							{ __(
-								'"Create a date field for publication date"',
-								'wp-content-types'
-							) }
-						</p>
+						{ mode === 'create' ? (
+							<>
+								<p>
+									{ __(
+										'Describe the content type you want to create.',
+										'wp-content-types'
+									) }
+								</p>
+								<p className="wpct-chat__examples">
+									{ __( 'Try:', 'wp-content-types' ) }
+									<br />
+									{ __(
+										'"Create a content type for Events with date and location fields"',
+										'wp-content-types'
+									) }
+									<br />
+									{ __(
+										'"I need a Recipe content type with ingredients and instructions"',
+										'wp-content-types'
+									) }
+								</p>
+							</>
+						) : (
+							<>
+								<p>
+									{ __(
+										'Ask me to create or modify fields.',
+										'wp-content-types'
+									) }
+								</p>
+								<p className="wpct-chat__examples">
+									{ __( 'Try:', 'wp-content-types' ) }
+									<br />
+									{ __(
+										'"Add a text field called Author Name"',
+										'wp-content-types'
+									) }
+									<br />
+									{ __(
+										'"Create a date field for publication date"',
+										'wp-content-types'
+									) }
+								</p>
+							</>
+						) }
 					</div>
 				) }
 				{ messages.map( ( msg ) => (
