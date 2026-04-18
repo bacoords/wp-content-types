@@ -77,9 +77,13 @@ class WPCT_Registry {
 		$post_types = get_post_types( array(), 'objects' );
 		$hardcoded  = array();
 
-		// Get database content type slugs to exclude them from hardcoded.
+		// Get database content type slugs to identify user-created types.
 		$database_types = WPCT_Content_Type::get_all();
 		$database_slugs = array_column( $database_types, 'slug' );
+
+		// Get reserved slugs from the registrar - these are core/WordPress types
+		// that cannot be created by users, only extended with fields.
+		$reserved_slugs = WPCT_Post_Type_Registrar::get_reserved_slugs();
 
 		foreach ( $post_types as $post_type ) {
 			// Skip our internal post type.
@@ -97,9 +101,12 @@ class WPCT_Registry {
 				continue;
 			}
 
-			// Skip post types that exist in the database (user-created types).
-			// These are registered by WPCT_Post_Type_Registrar but are not "hardcoded".
-			if ( in_array( $post_type->name, $database_slugs, true ) ) {
+			// Skip post types that exist in the database AND are not reserved.
+			// Reserved slugs (post, page, etc.) are core types that can only be
+			// extended with fields, not created by users. Non-reserved slugs in
+			// the database are user-created types registered by WPCT_Post_Type_Registrar.
+			if ( in_array( $post_type->name, $database_slugs, true ) &&
+				! in_array( $post_type->name, $reserved_slugs, true ) ) {
 				continue;
 			}
 

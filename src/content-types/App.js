@@ -44,7 +44,7 @@ function getSourceLabel( source, slug ) {
 		case 'hardcoded':
 			return CORE_POST_TYPES.includes( slug )
 				? __( 'Core', 'wp-content-types' )
-				: __( 'Code', 'wp-content-types' );
+				: __( 'Plugin', 'wp-content-types' );
 		case 'merged':
 			return __( 'Extended', 'wp-content-types' );
 		case 'database':

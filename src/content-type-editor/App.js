@@ -55,7 +55,7 @@ function getSourceBadgeLabel( source, slug ) {
 	if ( source === 'hardcoded' ) {
 		return CORE_POST_TYPES.includes( slug )
 			? __( 'Core', 'wp-content-types' )
-			: __( 'Code', 'wp-content-types' );
+			: __( 'Plugin', 'wp-content-types' );
 	}
 	return __( 'Extended', 'wp-content-types' );
 }

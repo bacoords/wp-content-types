@@ -45,6 +45,15 @@ class WPCT_Post_Type_Registrar {
 	);
 
 	/**
+	 * Get reserved post type slugs.
+	 *
+	 * @return array
+	 */
+	public static function get_reserved_slugs() {
+		return self::$reserved_slugs;
+	}
+
+	/**
 	 * Initialize the registrar.
 	 */
 	public static function init() {
