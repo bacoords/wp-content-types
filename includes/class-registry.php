@@ -80,6 +80,11 @@ class WPCT_Registry {
 				continue;
 			}
 
+			// Skip attachment (media) post type.
+			if ( $post_type->name === 'attachment' ) {
+				continue;
+			}
+
 			// Skip non-public post types unless they show in menu.
 			if ( ! $post_type->public && ! $post_type->show_in_menu ) {
 				continue;

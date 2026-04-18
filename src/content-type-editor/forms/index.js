@@ -4,30 +4,10 @@
 import { __ } from '@wordpress/i18n';
 
 /**
- * Form configuration for the Settings tab.
+ * Form configuration for the sidebar settings panel.
  */
-export const SETTINGS_FORM = {
-	fields: [
-		{
-			id: 'basic-settings',
-			label: __( 'Basic Settings', 'wp-content-types' ),
-			layout: { type: 'card' },
-			children: [ 'title', 'slug', 'public' ],
-		},
-		{
-			id: 'features',
-			label: __( 'Features', 'wp-content-types' ),
-			layout: { type: 'card' },
-			children: [
-				'supports_title',
-				'supports_author',
-				'supports_thumbnail',
-				'supports_excerpt',
-				'supports_comments',
-				'supports_revisions',
-			],
-		},
-	],
+export const SIDEBAR_SETTINGS_FORM = {
+	fields: [ 'title', 'slug', 'public' ],
 };
 
 /**
@@ -65,13 +45,19 @@ export function getAdvancedForm( isPublic ) {
 			id: 'rest',
 			label: __( 'REST API', 'wp-content-types' ),
 			layout: { type: 'card' },
-			children: [ 'show_in_rest', 'rest_base' ],
+			children: [ 'rest_base' ],
 		},
 		{
 			id: 'menu',
 			label: __( 'Admin Menu', 'wp-content-types' ),
 			layout: { type: 'card' },
 			children: [ 'menu_icon', 'menu_position' ],
+		},
+		{
+			id: 'discussion',
+			label: __( 'Discussion', 'wp-content-types' ),
+			layout: { type: 'card' },
+			children: [ 'supports_comments' ],
 		}
 	);
 

@@ -2,6 +2,7 @@
  * Fields DataView Component
  *
  * Displays fields in a DataViews table with edit modal.
+ * Includes built-in support fields and custom fields.
  */
 import { useState, useCallback, useMemo } from '@wordpress/element';
 import { DataViews } from '@wordpress/dataviews';
@@ -9,6 +10,7 @@ import { Button } from '@wordpress/components';
 import { plus } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import FieldEditorModal from './FieldEditorModal';
+import SupportFieldModal from './SupportFieldModal';
 
 /**
  * Field type labels for display.
@@ -25,25 +27,61 @@ const FIELD_TYPE_LABELS = {
 	checkbox: __( 'Checkbox', 'wp-content-types' ),
 };
 
-export default function FieldsDataView( { fields, onAddField, onUpdateField, onDeleteField } ) {
+export default function FieldsDataView( {
+	fields,
+	onAddField,
+	onUpdateField,
+	onDeleteField,
+	supportFields = [],
+	supports = [],
+	onToggleSupport,
+} ) {
 	// View state for DataViews
 	const [ view, setView ] = useState( {
 		type: 'table',
 		titleField: 'label',
-		fields: [ 'key', 'type', 'required' ],
+		fields: [ 'key', 'type', 'status' ],
 	} );
 
 	// Modal state
 	const [ editingField, setEditingField ] = useState( null );
+	const [ editingSupportField, setEditingSupportField ] = useState( null );
+
+	// Combine support fields with custom fields
+	const combinedFields = useMemo( () => {
+		// Add enabled status to support fields
+		const supportFieldsWithStatus = supportFields.map( ( field ) => ( {
+			...field,
+			enabled: supports.includes( field.supportKey ),
+			type: 'support',
+		} ) );
+
+		// Mark custom fields
+		const customFieldsWithType = fields.map( ( field ) => ( {
+			...field,
+			isBuiltIn: false,
+		} ) );
+
+		return [ ...supportFieldsWithStatus, ...customFieldsWithType ];
+	}, [ supportFields, supports, fields ] );
 
 	// Handle opening the edit modal
 	const handleEdit = useCallback( ( field ) => {
-		setEditingField( field );
+		if ( field.isBuiltIn ) {
+			setEditingSupportField( field );
+		} else {
+			setEditingField( field );
+		}
 	}, [] );
 
 	// Handle closing the modal
 	const handleCloseModal = useCallback( () => {
 		setEditingField( null );
+	}, [] );
+
+	// Handle closing support field modal
+	const handleCloseSupportModal = useCallback( () => {
+		setEditingSupportField( null );
 	}, [] );
 
 	// Handle saving from modal
@@ -63,6 +101,13 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 		[ onDeleteField ]
 	);
 
+	// Handle toggling support field
+	const handleToggleSupportField = useCallback( () => {
+		if ( editingSupportField && onToggleSupport ) {
+			onToggleSupport( editingSupportField.supportKey );
+		}
+	}, [ editingSupportField, onToggleSupport ] );
+
 	// Handle adding a new field
 	const handleAddField = useCallback( () => {
 		const newField = onAddField();
@@ -79,13 +124,20 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 			label: __( 'Label', 'wp-content-types' ),
 			getValue: ( { item } ) => item.label || '',
 			render: ( { item } ) => (
-				<button
-					type="button"
-					className="wpct-field-label-link"
-					onClick={ () => handleEdit( item ) }
-				>
-					{ item.label }
-				</button>
+				<div className="wpct-field-label-cell">
+					<button
+						type="button"
+						className="wpct-field-label-link"
+						onClick={ () => handleEdit( item ) }
+					>
+						{ item.label }
+					</button>
+					{ item.isBuiltIn && (
+						<span className="wpct-field-badge wpct-field-badge--builtin">
+							{ __( 'Built-in', 'wp-content-types' ) }
+						</span>
+					) }
+				</div>
 			),
 			enableGlobalSearch: true,
 		},
@@ -102,20 +154,45 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 		{
 			id: 'type',
 			label: __( 'Type', 'wp-content-types' ),
-			getValue: ( { item } ) => FIELD_TYPE_LABELS[ item.type ] || item.type,
-			elements: Object.entries( FIELD_TYPE_LABELS ).map( ( [ value, label ] ) => ( {
-				value: label,
-				label,
-			} ) ),
+			getValue: ( { item } ) => {
+				if ( item.isBuiltIn ) {
+					return __( 'WordPress', 'wp-content-types' );
+				}
+				return FIELD_TYPE_LABELS[ item.type ] || item.type;
+			},
+			elements: [
+				{ value: __( 'WordPress', 'wp-content-types' ), label: __( 'WordPress', 'wp-content-types' ) },
+				...Object.entries( FIELD_TYPE_LABELS ).map( ( [ value, label ] ) => ( {
+					value: label,
+					label,
+				} ) ),
+			],
 		},
 		{
-			id: 'required',
-			label: __( 'Required', 'wp-content-types' ),
-			getValue: ( { item } ) =>
-				item.required
-					? __( 'Yes', 'wp-content-types' )
-					: __( 'No', 'wp-content-types' ),
+			id: 'status',
+			label: __( 'Status', 'wp-content-types' ),
+			getValue: ( { item } ) => {
+				if ( item.isBuiltIn ) {
+					return item.enabled
+						? __( 'Enabled', 'wp-content-types' )
+						: __( 'Disabled', 'wp-content-types' );
+				}
+				return item.required
+					? __( 'Required', 'wp-content-types' )
+					: __( 'Optional', 'wp-content-types' );
+			},
 			render: ( { item } ) => {
+				if ( item.isBuiltIn ) {
+					return (
+						<span
+							className={ `wpct-status-badge wpct-status-badge--${ item.enabled ? 'enabled' : 'disabled' }` }
+						>
+							{ item.enabled
+								? __( 'Enabled', 'wp-content-types' )
+								: __( 'Disabled', 'wp-content-types' ) }
+						</span>
+					);
+				}
 				const isRequired = item.required === true;
 				return (
 					<span
@@ -131,14 +208,16 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 				);
 			},
 			elements: [
-				{ value: __( 'Yes', 'wp-content-types' ), label: __( 'Yes', 'wp-content-types' ) },
-				{ value: __( 'No', 'wp-content-types' ), label: __( 'No', 'wp-content-types' ) },
+				{ value: __( 'Enabled', 'wp-content-types' ), label: __( 'Enabled', 'wp-content-types' ) },
+				{ value: __( 'Disabled', 'wp-content-types' ), label: __( 'Disabled', 'wp-content-types' ) },
+				{ value: __( 'Required', 'wp-content-types' ), label: __( 'Required', 'wp-content-types' ) },
+				{ value: __( 'Optional', 'wp-content-types' ), label: __( 'Optional', 'wp-content-types' ) },
 			],
 		},
 	], [ handleEdit ] );
 
 	// DataViews actions
-	const actions = [
+	const actions = useMemo( () => [
 		{
 			id: 'edit',
 			label: __( 'Edit', 'wp-content-types' ),
@@ -152,6 +231,7 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 			id: 'delete',
 			label: __( 'Delete', 'wp-content-types' ),
 			isDestructive: true,
+			isEligible: ( item ) => ! item.isBuiltIn,
 			callback: ( items ) => {
 				const item = items[ 0 ];
 				// eslint-disable-next-line no-alert
@@ -160,7 +240,7 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 				}
 			},
 		},
-	];
+	], [ handleEdit, onDeleteField ] );
 
 	// Header button for DataViews toolbar
 	const headerActions = (
@@ -176,11 +256,11 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 	return (
 		<div className="wpct-fields-dataview">
 			<DataViews
-				data={ fields }
+				data={ combinedFields }
 				fields={ dataViewFields }
 				view={ view }
 				onChangeView={ setView }
-				paginationInfo={ { totalItems: fields.length, totalPages: 1 } }
+				paginationInfo={ { totalItems: combinedFields.length, totalPages: 1 } }
 				getItemId={ ( item ) => item._id }
 				isLoading={ false }
 				defaultLayouts={ { table: {} } }
@@ -193,6 +273,14 @@ export default function FieldsDataView( { fields, onAddField, onUpdateField, onD
 					onSave={ handleSaveField }
 					onDelete={ handleDeleteField }
 					onClose={ handleCloseModal }
+				/>
+			) }
+			{ editingSupportField && (
+				<SupportFieldModal
+					field={ editingSupportField }
+					isEnabled={ supports.includes( editingSupportField.supportKey ) }
+					onToggle={ handleToggleSupportField }
+					onClose={ handleCloseSupportModal }
 				/>
 			) }
 		</div>

@@ -16,8 +16,9 @@ import { Icon, chevronRight, lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useMemo, useState } from '@wordpress/element';
 import FieldsDataView from './components/fields/FieldsDataView';
-import { getSettingsFields, getAdvancedFields } from './fields';
-import { SETTINGS_FORM, getAdvancedForm } from './forms';
+import { getAdvancedFields } from './fields';
+import { SUPPORT_FIELDS, ALWAYS_ENABLED_SUPPORTS } from './fields/supportFields';
+import { getAdvancedForm, SIDEBAR_SETTINGS_FORM } from './forms';
 import { useFormData } from './hooks/useFormData';
 import { useFieldsManager } from './hooks/useFieldsManager';
 import AIChat from '../components/AIChat';
@@ -42,6 +43,29 @@ const DEFAULT_CONFIG = {
 };
 
 const CORE_POST_TYPES = [ 'post', 'page', 'attachment' ];
+
+/**
+ * Sidebar settings field definitions.
+ */
+const SIDEBAR_SETTINGS_FIELDS = [
+	{
+		id: 'title',
+		type: 'text',
+		label: __( 'Name', 'wp-content-types' ),
+		placeholder: __( 'e.g. Book', 'wp-content-types' ),
+	},
+	{
+		id: 'slug',
+		type: 'text',
+		label: __( 'Slug', 'wp-content-types' ),
+		placeholder: __( 'e.g. book', 'wp-content-types' ),
+	},
+	{
+		id: 'public',
+		type: 'boolean',
+		label: __( 'Public', 'wp-content-types' ),
+	},
+];
 
 function getSourceBadgeLabel( source, slug ) {
 	if ( source === 'hardcoded' ) {
@@ -98,11 +122,23 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 	);
 }
 
-function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager } ) {
+function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formData, handleFormChange, isReadOnly } ) {
 	return (
 		<div className="wpct-editor__sidebar">
+			{ ! isReadOnly && (
+				<Panel>
+					<PanelBody title={ __( 'Settings', 'wp-content-types' ) } initialOpen={ true }>
+						<DataForm
+							data={ formData }
+							fields={ SIDEBAR_SETTINGS_FIELDS }
+							form={ SIDEBAR_SETTINGS_FORM }
+							onChange={ handleFormChange }
+						/>
+					</PanelBody>
+				</Panel>
+			) }
 			<Panel>
-				<PanelBody title={ __( 'AI Assistant', 'wp-content-types' ) } initialOpen={ true }>
+				<PanelBody title={ __( 'AI Assistant', 'wp-content-types' ) } initialOpen={ ! isReadOnly ? false : true }>
 					<AIChat
 						contentTypeId={ contentTypeId }
 						contentTypeSlug={ contentTypeSlug }
@@ -111,16 +147,11 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager } ) {
 					/>
 				</PanelBody>
 			</Panel>
-			<Panel>
-				<PanelBody title={ __( 'Status', 'wp-content-types' ) } initialOpen={ false }>
-					<p>{ __( 'Content type status and actions will appear here.', 'wp-content-types' ) }</p>
-				</PanelBody>
-			</Panel>
 		</div>
 	);
 }
 
-function FieldsTab( { fieldsManager } ) {
+function FieldsTab( { fieldsManager, supports, onToggleSupport } ) {
 	const { fields, addField, updateField, deleteField } = fieldsManager;
 
 	return (
@@ -130,6 +161,9 @@ function FieldsTab( { fieldsManager } ) {
 				onAddField={ addField }
 				onUpdateField={ updateField }
 				onDeleteField={ deleteField }
+				supportFields={ SUPPORT_FIELDS }
+				supports={ supports }
+				onToggleSupport={ onToggleSupport }
 			/>
 		</div>
 	);
@@ -148,31 +182,6 @@ function JsonTab( { record, editedRecord, config } ) {
 				className="wpct-json-textarea"
 				readOnly
 				value={ JSON.stringify( schema, null, 2 ) }
-			/>
-		</div>
-	);
-}
-
-function SettingsTab( { record, editedRecord, edit, config, updateConfig } ) {
-	const { formData, handleFormChange } = useFormData( {
-		record,
-		editedRecord,
-		edit,
-		config,
-		updateConfig,
-	} );
-	const fields = useMemo(
-		() => getSettingsFields( formData.slug ),
-		[ formData.slug ]
-	);
-
-	return (
-		<div className="wpct-editor__tab-content">
-			<DataForm
-				data={ formData }
-				fields={ fields }
-				form={ SETTINGS_FORM }
-				onChange={ handleFormChange }
 			/>
 		</div>
 	);
@@ -210,10 +219,35 @@ function AdvancedTab( { record, editedRecord, edit, config, updateConfig } ) {
 function EditorContent( { record, editedRecord, edit, config, updateConfig, fieldsManager, source } ) {
 	const isReadOnly = source !== 'database';
 
+	// Get supports array from config
+	const supports = config.supports || [];
+
+	// Handle toggling a support feature
+	const handleToggleSupport = useCallback( ( supportKey ) => {
+		const currentSupports = config.supports || [];
+		let newSupports;
+
+		if ( currentSupports.includes( supportKey ) ) {
+			// Remove the support
+			newSupports = currentSupports.filter( ( s ) => s !== supportKey );
+		} else {
+			// Add the support
+			newSupports = [ ...currentSupports, supportKey ];
+		}
+
+		// Ensure always-enabled supports are included
+		ALWAYS_ENABLED_SUPPORTS.forEach( ( s ) => {
+			if ( ! newSupports.includes( s ) ) {
+				newSupports.push( s );
+			}
+		} );
+
+		updateConfig( 'supports', newSupports );
+	}, [ config.supports, updateConfig ] );
+
 	const tabs = [
 		{ name: 'fields', title: __( 'Fields', 'wp-content-types' ) },
 		...( isReadOnly ? [] : [
-			{ name: 'settings', title: __( 'Settings', 'wp-content-types' ) },
 			{ name: 'advanced', title: __( 'Advanced', 'wp-content-types' ) },
 		] ),
 		{ name: 'json', title: __( 'JSON', 'wp-content-types' ) },
@@ -228,17 +262,8 @@ function EditorContent( { record, editedRecord, edit, config, updateConfig, fiel
 							return (
 								<FieldsTab
 									fieldsManager={ fieldsManager }
-								/>
-							);
-						}
-						if ( tab.name === 'settings' ) {
-							return (
-								<SettingsTab
-									record={ record }
-									editedRecord={ editedRecord }
-									edit={ edit }
-									config={ config }
-									updateConfig={ updateConfig }
+									supports={ supports }
+									onToggleSupport={ handleToggleSupport }
 								/>
 							);
 						}
@@ -332,6 +357,15 @@ export default function App() {
 	// Initialize fields manager hook
 	const fieldsManager = useFieldsManager( { config, updateConfig } );
 
+	// Form data for sidebar settings
+	const { formData, handleFormChange } = useFormData( {
+		record,
+		editedRecord,
+		edit,
+		config,
+		updateConfig,
+	} );
+
 	const handleSave = async () => {
 		if ( isHardcodedType ) {
 			// For hardcoded types, we need to create a database record to store custom fields
@@ -358,6 +392,7 @@ export default function App() {
 	};
 
 	const currentHasEdits = isHardcodedType ? hardcodedState?.hasEdits : hasEdits;
+	const isReadOnly = source !== 'database';
 
 	useEffect( () => {
 		document.body.classList.add( 'is-fullscreen-mode' );
@@ -409,6 +444,9 @@ export default function App() {
 						contentTypeId={ contentTypeId }
 						contentTypeSlug={ isHardcodedType ? contentTypeSlug : ( editedRecord?.slug ?? record?.slug ?? '' ) }
 						fieldsManager={ fieldsManager }
+						formData={ formData }
+						handleFormChange={ handleFormChange }
+						isReadOnly={ isReadOnly }
 					/>
 				</div>
 			</div>

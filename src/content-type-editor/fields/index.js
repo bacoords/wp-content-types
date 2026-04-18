@@ -4,94 +4,6 @@
 import { __ } from '@wordpress/i18n';
 
 /**
- * Individual support feature field IDs.
- */
-export const SUPPORT_FIELD_IDS = [
-	'supports_title',
-	'supports_author',
-	'supports_thumbnail',
-	'supports_excerpt',
-	'supports_comments',
-	'supports_revisions',
-];
-
-/**
- * Get field definitions for the Settings tab.
- *
- * @param {string} slug Current slug value for placeholder text.
- * @return {Array} Array of field definitions.
- */
-export function getSettingsFields( slug ) {
-	return [
-		{
-			id: 'title',
-			type: 'text',
-			label: __( 'Name', 'wp-content-types' ),
-			description: __(
-				'The singular name for this content type.',
-				'wp-content-types'
-			),
-			placeholder: __( 'e.g. Book', 'wp-content-types' ),
-			isValid: { required: true },
-		},
-		{
-			id: 'slug',
-			type: 'text',
-			label: __( 'Slug', 'wp-content-types' ),
-			description: __(
-				'Max 20 characters, lowercase letters, numbers, underscores.',
-				'wp-content-types'
-			),
-			placeholder: __( 'e.g. book', 'wp-content-types' ),
-			isValid: {
-				required: true,
-				maxLength: 20,
-				pattern: '^[a-z0-9_]+$',
-			},
-		},
-		{
-			id: 'public',
-			type: 'boolean',
-			label: __( 'Public', 'wp-content-types' ),
-			description: __(
-				'Makes this content type visible on the front end.',
-				'wp-content-types'
-			),
-		},
-		{
-			id: 'supports_title',
-			type: 'boolean',
-			label: __( 'Title', 'wp-content-types' ),
-		},
-		{
-			id: 'supports_author',
-			type: 'boolean',
-			label: __( 'Author', 'wp-content-types' ),
-		},
-		{
-			id: 'supports_thumbnail',
-			type: 'boolean',
-			label: __( 'Featured Image', 'wp-content-types' ),
-		},
-		{
-			id: 'supports_excerpt',
-			type: 'boolean',
-			label: __( 'Excerpt', 'wp-content-types' ),
-		},
-		{
-			id: 'supports_comments',
-			type: 'boolean',
-			label: __( 'Comments', 'wp-content-types' ),
-		},
-		{
-			id: 'supports_revisions',
-			type: 'boolean',
-			label: __( 'Revisions', 'wp-content-types' ),
-		},
-	];
-}
-
-/**
  * Get field definitions for the Advanced tab.
  *
  * @param {string} slug Current slug value for placeholder text.
@@ -163,18 +75,13 @@ export function getAdvancedFields( slug ) {
 
 		// REST API fields
 		{
-			id: 'show_in_rest',
-			type: 'boolean',
-			label: __( 'Show in REST API', 'wp-content-types' ),
-			description: __(
-				'Required for block editor support.',
-				'wp-content-types'
-			),
-		},
-		{
 			id: 'rest_base',
 			type: 'text',
 			label: __( 'REST Base', 'wp-content-types' ),
+			description: __(
+				'Custom REST API base. Leave empty to use the post type slug.',
+				'wp-content-types'
+			),
 			placeholder:
 				slug || __( 'Uses post type slug', 'wp-content-types' ),
 		},
@@ -191,6 +98,17 @@ export function getAdvancedFields( slug ) {
 			type: 'integer',
 			label: __( 'Menu Position', 'wp-content-types' ),
 			isValid: { min: 0, max: 100 },
+		},
+
+		// Discussion field
+		{
+			id: 'supports_comments',
+			type: 'boolean',
+			label: __( 'Allow Comments', 'wp-content-types' ),
+			description: __(
+				'Enable comments for this content type.',
+				'wp-content-types'
+			),
 		},
 	];
 }

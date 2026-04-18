@@ -13,19 +13,16 @@ const RECORD_FIELDS = [ 'title', 'slug' ];
 
 /**
  * Features that are always enabled (not shown in UI).
+ * These are required for the block editor and core functionality.
  */
-const ALWAYS_ENABLED_SUPPORTS = [ 'editor', 'custom-fields' ];
+const ALWAYS_ENABLED_SUPPORTS = [ 'editor', 'custom-fields', 'revisions' ];
 
 /**
  * Mapping from form field IDs to support values.
+ * Only includes supports that are managed via DataForm (not Fields tab).
  */
 const SUPPORT_FIELD_MAP = {
-	supports_title: 'title',
-	supports_author: 'author',
-	supports_thumbnail: 'thumbnail',
-	supports_excerpt: 'excerpt',
 	supports_comments: 'comments',
-	supports_revisions: 'revisions',
 };
 
 /**
@@ -69,9 +66,11 @@ export function useFormData( {
 			title: editedRecord?.title ?? record?.title?.rendered ?? '',
 			slug: editedRecord?.slug ?? record?.slug ?? '',
 			...config,
+			// Always enable REST API (required for block editor)
+			show_in_rest: true,
 		};
 
-		// Convert supports array to individual boolean fields
+		// Convert supports array to individual boolean fields for DataForm
 		const supports = data.supports || [];
 		Object.entries( SUPPORT_FIELD_MAP ).forEach( ( [ fieldId, supportValue ] ) => {
 			data[ fieldId ] = supports.includes( supportValue );
@@ -116,17 +115,30 @@ export function useFormData( {
 			);
 
 			if ( changedSupportFields.length > 0 ) {
-				// Build the new supports array from current form state + edits
-				const newSupports = [ ...ALWAYS_ENABLED_SUPPORTS ];
+				// Build the new supports array from current config + edits
+				// Start with the current supports array to preserve Fields tab settings
+				const currentSupports = config.supports || [];
+				const newSupports = [ ...currentSupports ];
 
+				// Apply changes from DataForm support fields
 				Object.entries( SUPPORT_FIELD_MAP ).forEach( ( [ fieldId, supportValue ] ) => {
 					// Use the edited value if present, otherwise use current form data
 					const isEnabled = fieldId in processedEdits
 						? processedEdits[ fieldId ]
 						: formData[ fieldId ];
 
-					if ( isEnabled && ! newSupports.includes( supportValue ) ) {
+					const index = newSupports.indexOf( supportValue );
+					if ( isEnabled && index === -1 ) {
 						newSupports.push( supportValue );
+					} else if ( ! isEnabled && index !== -1 ) {
+						newSupports.splice( index, 1 );
+					}
+				} );
+
+				// Ensure always-enabled supports are included
+				ALWAYS_ENABLED_SUPPORTS.forEach( ( s ) => {
+					if ( ! newSupports.includes( s ) ) {
+						newSupports.push( s );
 					}
 				} );
 
@@ -153,7 +165,7 @@ export function useFormData( {
 				edit( recordEdits );
 			}
 		},
-		[ formData, edit, updateConfig ]
+		[ formData, config, edit, updateConfig ]
 	);
 
 	return { formData, handleFormChange };
