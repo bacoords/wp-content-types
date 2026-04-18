@@ -27,6 +27,7 @@ body.is-fullscreen-mode #wpfooter {
 }
 
 @media screen and (max-width: 782px) {
+
 	.wpct-list {
 		top: 46px;
 		left: 0;
@@ -193,7 +194,7 @@ body.is-fullscreen-mode #wpfooter {
 }
 
 .wpct-chat__ability-icon {
-	font-weight: bold;
+	font-weight: 700;
 }
 
 .wpct-chat__ability-name {
@@ -234,6 +235,7 @@ body.is-fullscreen-mode #wpfooter {
 
 /* Responsive */
 @media screen and (max-width: 782px) {
+
 	.wpct-list__body {
 		flex-direction: column;
 	}

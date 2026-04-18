@@ -122,6 +122,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 960px) {
+
 	.wpct-editor__body {
 		flex-direction: column;
 	}

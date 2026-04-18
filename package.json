@@ -6,7 +6,7 @@
 		"build": "wp-scripts build",
 		"start": "wp-scripts start",
 		"lint:js": "wp-scripts lint-js src/",
-		"lint:css": "wp-scripts lint-style src/"
+		"lint:css": "wp-scripts lint-style 'src/**/*.css'"
 	},
 	"devDependencies": {
 		"@wordpress/scripts": "^28.0.0"
