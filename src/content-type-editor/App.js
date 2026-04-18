@@ -12,16 +12,17 @@ import {
 	Popover,
 } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews';
-import { Icon, chevronRight, lock } from '@wordpress/icons';
+import { Icon, chevronRight, lock, moreVertical } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useMemo, useState } from '@wordpress/element';
 import FieldsDataView from './components/fields/FieldsDataView';
 import { getAdvancedFields } from './fields';
 import { SUPPORT_FIELDS, ALWAYS_ENABLED_SUPPORTS } from './fields/supportFields';
-import { getAdvancedForm, SIDEBAR_SETTINGS_FORM } from './forms';
+import { getAdvancedForm } from './forms';
 import { useFormData } from './hooks/useFormData';
 import { useFieldsManager } from './hooks/useFieldsManager';
 import AIChat from '../components/AIChat';
+import ContentTypeSettingsModal from '../components/ContentTypeSettingsModal';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
 const contentTypeSlug = window.wpctSettings?.contentTypeSlug;
@@ -43,30 +44,6 @@ const DEFAULT_CONFIG = {
 };
 
 const CORE_POST_TYPES = [ 'post', 'page', 'attachment' ];
-
-/**
- * Sidebar settings field definitions.
- */
-const SIDEBAR_SETTINGS_FIELDS = [
-	{
-		id: 'title',
-		type: 'text',
-		label: __( 'Name', 'wp-content-types' ),
-		placeholder: __( 'e.g. Book', 'wp-content-types' ),
-	},
-	{
-		id: 'slug',
-		type: 'text',
-		label: __( 'Slug', 'wp-content-types' ),
-		placeholder: __( 'e.g. book', 'wp-content-types' ),
-		description: __( 'Warning: changing the slug will remove any existing data you\'ve already entered.', 'wp-content-types' ),
-	},
-	{
-		id: 'public',
-		type: 'boolean',
-		label: __( 'Public', 'wp-content-types' ),
-	},
-];
 
 function getSourceBadgeLabel( source, slug ) {
 	if ( source === 'hardcoded' ) {
@@ -123,13 +100,16 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 	);
 }
 
-function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formData, handleFormChange, isReadOnly, config, title } ) {
+function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formData, isReadOnly, config, title, onSettingsSaved } ) {
 	const adminUrl = window.wpctSettings?.adminUrl || '/wp-admin/';
 	const theme = window.wpctSettings?.theme || '';
 	const slug = contentTypeSlug;
 
 	const singleTemplateUrl = `${ adminUrl }site-editor.php?p=%2Fwp_template%2F${ theme }%2F%2Fsingle-${ slug }&canvas=edit`;
 	const archiveTemplateUrl = `${ adminUrl }site-editor.php?p=%2Fwp_template%2F${ theme }%2F%2Farchive-${ slug }&canvas=edit`;
+
+	// Settings modal state
+	const [ isSettingsModalOpen, setIsSettingsModalOpen ] = useState( false );
 
 	// Template existence state
 	const [ singleTemplateExists, setSingleTemplateExists ] = useState( null );
@@ -220,57 +200,74 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 		}
 	};
 
+	// Prepare content type data for the modal
+	const contentTypeForModal = {
+		id: contentTypeId,
+		name: formData.title,
+		slug: formData.slug,
+		public: formData.public,
+		config,
+	};
+
 	return (
 		<div className="wpct-editor__sidebar">
 			{ ! isReadOnly && (
-				<Panel>
-					<PanelBody title={ __( 'Settings', 'wp-content-types' ) } initialOpen={ true }>
-						<DataForm
-							data={ formData }
-							fields={ SIDEBAR_SETTINGS_FIELDS }
-							form={ SIDEBAR_SETTINGS_FORM }
-							onChange={ handleFormChange }
+				<div className="wpct-sidebar-settings">
+					<div className="wpct-sidebar-settings__header">
+						<span className="wpct-sidebar-settings__title">
+							{ formData.title || __( 'Untitled', 'wp-content-types' ) }
+						</span>
+						<Button
+							icon={ moreVertical }
+							label={ __( 'Edit settings', 'wp-content-types' ) }
+							onClick={ () => setIsSettingsModalOpen( true ) }
+							size="small"
 						/>
-						{ config.public && slug && (
-							<div className="wpct-template-links">
-								{ singleTemplateExists === null ? (
+					</div>
+					<span className={ `wpct-sidebar-settings__badge wpct-sidebar-settings__badge--${ formData.public ? 'public' : 'private' }` }>
+						{ formData.public
+							? __( 'Public', 'wp-content-types' )
+							: __( 'Private', 'wp-content-types' ) }
+					</span>
+					{ config.public && slug && (
+						<div className="wpct-template-links">
+							{ singleTemplateExists === null ? (
+								<Spinner />
+							) : singleTemplateExists ? (
+								<Button variant="link" href={ singleTemplateUrl } target="_blank">
+									{ __( 'Edit Single Template', 'wp-content-types' ) }
+								</Button>
+							) : (
+								<Button
+									variant="link"
+									onClick={ () => createTemplate( 'single' ) }
+									isBusy={ isCreatingSingle }
+									disabled={ isCreatingSingle }
+								>
+									{ __( 'Create Single Template', 'wp-content-types' ) }
+								</Button>
+							) }
+							{ config.has_archive && (
+								archiveTemplateExists === null ? (
 									<Spinner />
-								) : singleTemplateExists ? (
-									<Button variant="link" href={ singleTemplateUrl } target="_blank">
-										{ __( 'Edit Single Template', 'wp-content-types' ) }
+								) : archiveTemplateExists ? (
+									<Button variant="link" href={ archiveTemplateUrl } target="_blank">
+										{ __( 'Edit Archive Template', 'wp-content-types' ) }
 									</Button>
 								) : (
 									<Button
 										variant="link"
-										onClick={ () => createTemplate( 'single' ) }
-										isBusy={ isCreatingSingle }
-										disabled={ isCreatingSingle }
+										onClick={ () => createTemplate( 'archive' ) }
+										isBusy={ isCreatingArchive }
+										disabled={ isCreatingArchive }
 									>
-										{ __( 'Create Single Template', 'wp-content-types' ) }
+										{ __( 'Create Archive Template', 'wp-content-types' ) }
 									</Button>
-								) }
-								{ config.has_archive && (
-									archiveTemplateExists === null ? (
-										<Spinner />
-									) : archiveTemplateExists ? (
-										<Button variant="link" href={ archiveTemplateUrl } target="_blank">
-											{ __( 'Edit Archive Template', 'wp-content-types' ) }
-										</Button>
-									) : (
-										<Button
-											variant="link"
-											onClick={ () => createTemplate( 'archive' ) }
-											isBusy={ isCreatingArchive }
-											disabled={ isCreatingArchive }
-										>
-											{ __( 'Create Archive Template', 'wp-content-types' ) }
-										</Button>
-									)
-								) }
-							</div>
-						) }
-					</PanelBody>
-				</Panel>
+								)
+							) }
+						</div>
+					) }
+				</div>
 			) }
 			<Panel>
 				<PanelBody title={ __( 'AI Assistant', 'wp-content-types' ) } initialOpen={ ! isReadOnly ? false : true }>
@@ -282,6 +279,12 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 					/>
 				</PanelBody>
 			</Panel>
+			<ContentTypeSettingsModal
+				isOpen={ isSettingsModalOpen }
+				onClose={ () => setIsSettingsModalOpen( false ) }
+				contentType={ contentTypeForModal }
+				onSave={ onSettingsSaved }
+			/>
 		</div>
 	);
 }
@@ -580,10 +583,10 @@ export default function App() {
 						contentTypeSlug={ isHardcodedType ? contentTypeSlug : ( editedRecord?.slug ?? record?.slug ?? '' ) }
 						fieldsManager={ fieldsManager }
 						formData={ formData }
-						handleFormChange={ handleFormChange }
 						isReadOnly={ isReadOnly }
 						config={ config }
 						title={ title }
+						onSettingsSaved={ () => window.location.reload() }
 					/>
 				</div>
 			</div>

@@ -228,6 +228,28 @@ export default function FieldsDataView( {
 			},
 		},
 		{
+			id: 'enable',
+			label: __( 'Enable', 'wp-content-types' ),
+			isEligible: ( item ) => item.isBuiltIn && ! item.enabled,
+			callback: ( items ) => {
+				const item = items[ 0 ];
+				if ( onToggleSupport ) {
+					onToggleSupport( item.supportKey );
+				}
+			},
+		},
+		{
+			id: 'disable',
+			label: __( 'Disable', 'wp-content-types' ),
+			isEligible: ( item ) => item.isBuiltIn && item.enabled,
+			callback: ( items ) => {
+				const item = items[ 0 ];
+				if ( onToggleSupport ) {
+					onToggleSupport( item.supportKey );
+				}
+			},
+		},
+		{
 			id: 'delete',
 			label: __( 'Delete', 'wp-content-types' ),
 			isDestructive: true,
@@ -240,7 +262,7 @@ export default function FieldsDataView( {
 				}
 			},
 		},
-	], [ handleEdit, onDeleteField ] );
+	], [ handleEdit, onDeleteField, onToggleSupport ] );
 
 	// Header button for DataViews toolbar
 	const headerActions = (
