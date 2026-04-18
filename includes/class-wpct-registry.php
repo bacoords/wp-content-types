@@ -103,13 +103,17 @@ class WPCT_Registry {
 				continue;
 			}
 
+			// Convert supports from associative array to flat array of keys.
+			$supports_assoc = get_all_post_type_supports( $post_type->name );
+			$supports_array = is_array( $supports_assoc ) ? array_keys( $supports_assoc ) : array();
+
 			$hardcoded[] = array(
 				'id'     => null,
 				'name'   => $post_type->labels->singular_name,
 				'slug'   => $post_type->name,
 				'config' => array(
 					'labels'      => (array) $post_type->labels,
-					'supports'    => get_all_post_type_supports( $post_type->name ),
+					'supports'    => $supports_array,
 					'public'      => $post_type->public,
 					'has_archive' => $post_type->has_archive,
 					'fields'      => self::get_hardcoded_fields( $post_type->name ),
