@@ -19,6 +19,9 @@ require_once WPCT_PATH . 'includes/class-admin.php';
 require_once WPCT_PATH . 'includes/schemas/content-type.php';
 require_once WPCT_PATH . 'includes/class-abilities.php';
 
+// AI Chat (WP 7.0+).
+require_once WPCT_PATH . 'includes/class-ai-chat.php';
+
 // Field types.
 require_once WPCT_PATH . 'includes/field-types/class-field-type.php';
 require_once WPCT_PATH . 'includes/field-types/class-text.php';
@@ -31,3 +34,6 @@ add_action( 'init', array( 'WPCT_Post_Type_Registrar', 'init' ), 15 ); // Regist
 add_action( 'wp_abilities_api_categories_init', array( 'WPCT_Abilities', 'register_category' ) );
 add_action( 'wp_abilities_api_init', array( 'WPCT_Abilities', 'register_abilities' ) );
 add_action( 'admin_menu', array( 'WPCT_Admin', 'init' ) );
+
+// Initialize AI Chat REST endpoint.
+WPCT_AI_Chat::init();

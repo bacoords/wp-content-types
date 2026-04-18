@@ -20,6 +20,7 @@ import { getSettingsFields, getAdvancedFields } from './fields';
 import { SETTINGS_FORM, getAdvancedForm } from './forms';
 import { useFormData } from './hooks/useFormData';
 import { useFieldsManager } from './hooks/useFieldsManager';
+import AIChat from '../components/AIChat';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
 const contentTypeSlug = window.wpctSettings?.contentTypeSlug;
@@ -97,11 +98,21 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 	);
 }
 
-function EditorSidebar() {
+function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager } ) {
 	return (
 		<div className="wpct-editor__sidebar">
 			<Panel>
-				<PanelBody title={ __( 'Status', 'wp-content-types' ) } initialOpen={ true }>
+				<PanelBody title={ __( 'AI Assistant', 'wp-content-types' ) } initialOpen={ true }>
+					<AIChat
+						contentTypeId={ contentTypeId }
+						contentTypeSlug={ contentTypeSlug }
+						fieldsManager={ fieldsManager }
+						currentFields={ fieldsManager?.fields || [] }
+					/>
+				</PanelBody>
+			</Panel>
+			<Panel>
+				<PanelBody title={ __( 'Status', 'wp-content-types' ) } initialOpen={ false }>
 					<p>{ __( 'Content type status and actions will appear here.', 'wp-content-types' ) }</p>
 				</PanelBody>
 			</Panel>
@@ -394,7 +405,11 @@ export default function App() {
 						fieldsManager={ fieldsManager }
 						source={ source }
 					/>
-					<EditorSidebar />
+					<EditorSidebar
+						contentTypeId={ contentTypeId }
+						contentTypeSlug={ isHardcodedType ? contentTypeSlug : ( editedRecord?.slug ?? record?.slug ?? '' ) }
+						fieldsManager={ fieldsManager }
+					/>
 				</div>
 			</div>
 			<Popover.Slot />

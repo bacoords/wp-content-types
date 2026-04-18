@@ -239,21 +239,33 @@ export function useFieldsManager( { config, updateConfig } ) {
 
 	/**
 	 * Add a new field.
+	 *
+	 * @param {Object} fieldData Optional field data to use instead of defaults.
 	 */
-	const addField = useCallback( () => {
+	const addField = useCallback( ( fieldData = {} ) => {
 		// Calculate max position
 		const maxPosition = fields.reduce(
 			( max, f ) => Math.max( max, f.position || 0 ),
 			0
 		);
 
+		// Generate key from label if provided, otherwise use provided key or default
+		let fieldKey = fieldData.key;
+		if ( ! fieldKey && fieldData.label ) {
+			fieldKey = generateKey( fieldData.label );
+		}
+		if ( ! fieldKey ) {
+			fieldKey = 'new_field';
+		}
+
 		const newField = {
 			_id: generateId(),
-			key: makeUniqueKey( 'new_field', fields ),
-			label: 'New Field',
-			type: 'text',
-			required: false,
+			key: makeUniqueKey( fieldKey, fields ),
+			label: fieldData.label || 'New Field',
+			type: fieldData.type || 'text',
+			required: fieldData.required || false,
 			position: maxPosition + 10,
+			...( fieldData.config && { config: fieldData.config } ),
 		};
 
 		updateFields( [ ...fields, newField ] );
@@ -263,7 +275,64 @@ export function useFieldsManager( { config, updateConfig } ) {
 	}, [ fields, updateFields ] );
 
 	/**
-	 * Delete a field.
+	 * Add multiple fields at once.
+	 *
+	 * @param {Array} fieldsData Array of field data objects.
+	 * @return {Array} Array of created fields.
+	 */
+	const addFields = useCallback( ( fieldsData = [] ) => {
+		if ( ! Array.isArray( fieldsData ) || fieldsData.length === 0 ) {
+			return [];
+		}
+
+		// Calculate starting position
+		let currentPosition = fields.reduce(
+			( max, f ) => Math.max( max, f.position || 0 ),
+			0
+		);
+
+		// Track all fields (existing + new) for unique key generation
+		const allFields = [ ...fields ];
+		const newFields = [];
+
+		for ( const fieldData of fieldsData ) {
+			currentPosition += 10;
+
+			// Generate key from label if provided, otherwise use provided key or default
+			let fieldKey = fieldData.key;
+			if ( ! fieldKey && fieldData.label ) {
+				fieldKey = generateKey( fieldData.label );
+			}
+			if ( ! fieldKey ) {
+				fieldKey = 'new_field';
+			}
+
+			const newField = {
+				_id: generateId(),
+				key: makeUniqueKey( fieldKey, allFields ),
+				label: fieldData.label || 'New Field',
+				type: fieldData.type || 'text',
+				required: fieldData.required || false,
+				position: currentPosition,
+				...( fieldData.config && { config: fieldData.config } ),
+			};
+
+			allFields.push( newField );
+			newFields.push( newField );
+		}
+
+		updateFields( allFields );
+
+		// Select the last added field
+		if ( newFields.length > 0 ) {
+			setSelectedFieldId( newFields[ newFields.length - 1 ]._id );
+		}
+
+		return newFields;
+	}, [ fields, updateFields ] );
+
+	/**
+	 * Delete a field by _id.
 	 */
 	const deleteField = useCallback(
 		( fieldId ) => {
@@ -274,6 +343,52 @@ export function useFieldsManager( { config, updateConfig } ) {
 			if ( selectedFieldId === fieldId ) {
 				clearSelection();
 			}
+		},
+		[ fields, updateFields, selectedFieldId, clearSelection ]
+	);
+
+	/**
+	 * Update a field by its key.
+	 *
+	 * @param {string} fieldKey The field key to update.
+	 * @param {Object} edits    The edits to apply.
+	 * @return {boolean} True if field was found and updated.
+	 */
+	const updateFieldByKey = useCallback(
+		( fieldKey, edits ) => {
+			const field = fields.find( ( f ) => f.key === fieldKey );
+			if ( ! field ) {
+				return false;
+			}
+
+			updateField( field._id, edits );
+			return true;
+		},
+		[ fields, updateField ]
+	);
+
+	/**
+	 * Delete a field by its key.
+	 *
+	 * @param {string} fieldKey The field key to delete.
+	 * @return {boolean} True if field was found and deleted.
+	 */
+	const deleteFieldByKey = useCallback(
+		( fieldKey ) => {
+			const field = fields.find( ( f ) => f.key === fieldKey );
+			if ( ! field ) {
+				return false;
+			}
+
+			const newFields = fields.filter( ( f ) => f.key !== fieldKey );
+			updateFields( newFields );
+
+			// Clear selection if deleted field was selected
+			if ( selectedFieldId === field._id ) {
+				clearSelection();
+			}
+
+			return true;
 		},
 		[ fields, updateFields, selectedFieldId, clearSelection ]
 	);
@@ -290,7 +405,10 @@ export function useFieldsManager( { config, updateConfig } ) {
 
 		// Field operations
 		addField,
+		addFields,
 		updateField,
+		updateFieldByKey,
 		deleteField,
+		deleteFieldByKey,
 	};
 }
