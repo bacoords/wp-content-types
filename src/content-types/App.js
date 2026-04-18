@@ -15,6 +15,7 @@ import {
 import { lock } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import ContentTypeSettingsModal from '../components/ContentTypeSettingsModal';
+import Badge from '../components/Badge';
 
 function getEditUrl( item ) {
 	// For hardcoded types without a database ID, use slug.
@@ -42,31 +43,6 @@ function getSourceLabel( source, slug ) {
 	}
 }
 
-function SourceBadge( { source, slug } ) {
-	const label = getSourceLabel( source, slug );
-	const isEditable = source === 'database';
-	const showLock = source === 'hardcoded';
-
-	const style = {
-		display: 'inline-flex',
-		alignItems: 'center',
-		gap: '4px',
-		padding: '2px 8px',
-		borderRadius: '2px',
-		fontSize: '12px',
-		fontWeight: 500,
-		backgroundColor: isEditable ? '#e7f5e7' : '#f0f0f0',
-		color: isEditable ? '#1e7b1e' : '#50575e',
-	};
-
-	return (
-		<span style={ style }>
-			{ showLock && <Icon icon={ lock } size={ 12 } /> }
-			{ label }
-		</span>
-	);
-}
-
 const fields = [
 	{
 		id: 'name',
@@ -91,7 +67,14 @@ const fields = [
 		id: 'source',
 		label: __( 'Source', 'wp-content-types' ),
 		getValue: ( { item } ) => getSourceLabel( item.source, item.slug ),
-		render: ( { item } ) => <SourceBadge source={ item.source } slug={ item.slug } />,
+		render: ( { item } ) => {
+			const isEditable = item.source === 'database';
+			return (
+				<Badge intent={ isEditable ? 'success' : 'default' } icon={ item.source === 'hardcoded' ? lock : null }>
+					{ getSourceLabel( item.source, item.slug ) }
+				</Badge>
+			);
+		},
 		elements: [
 			{ value: __( 'Core', 'wp-content-types' ), label: __( 'Core', 'wp-content-types' ) },
 			{ value: __( 'Code', 'wp-content-types' ), label: __( 'Code', 'wp-content-types' ) },
@@ -105,6 +88,14 @@ const fields = [
 		getValue: ( { item } ) => {
 			const isPublic = item.config?.public ?? true;
 			return isPublic ? __( 'Public', 'wp-content-types' ) : __( 'Private', 'wp-content-types' );
+		},
+		render: ( { item } ) => {
+			const isPublic = item.config?.public ?? true;
+			return (
+				<Badge intent={ isPublic ? 'success' : 'default' }>
+					{ isPublic ? __( 'Public', 'wp-content-types' ) : __( 'Private', 'wp-content-types' ) }
+				</Badge>
+			);
 		},
 		elements: [
 			{ value: __( 'Public', 'wp-content-types' ), label: __( 'Public', 'wp-content-types' ) },

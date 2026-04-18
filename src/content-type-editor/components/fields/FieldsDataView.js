@@ -11,6 +11,7 @@ import { plus } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import FieldEditorModal from './FieldEditorModal';
 import SupportFieldModal from './SupportFieldModal';
+import Badge from '../../../components/Badge';
 
 /**
  * Field type labels for display.
@@ -133,9 +134,7 @@ export default function FieldsDataView( {
 						{ item.label }
 					</button>
 					{ item.isBuiltIn && (
-						<span className="wpct-field-badge wpct-field-badge--builtin">
-							{ __( 'Built-in', 'wp-content-types' ) }
-						</span>
+						<Badge intent="default">{ __( 'Built-in', 'wp-content-types' ) }</Badge>
 					) }
 				</div>
 			),
@@ -184,13 +183,9 @@ export default function FieldsDataView( {
 			render: ( { item } ) => {
 				if ( item.isBuiltIn ) {
 					return (
-						<span
-							className={ `wpct-status-badge wpct-status-badge--${ item.enabled ? 'enabled' : 'disabled' }` }
-						>
-							{ item.enabled
-								? __( 'Enabled', 'wp-content-types' )
-								: __( 'Disabled', 'wp-content-types' ) }
-						</span>
+						<Badge intent={ item.enabled ? 'success' : 'default' }>
+							{ item.enabled ? __( 'Enabled', 'wp-content-types' ) : __( 'Disabled', 'wp-content-types' ) }
+						</Badge>
 					);
 				}
 				const isRequired = item.required === true;

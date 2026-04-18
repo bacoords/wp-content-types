@@ -394,42 +394,6 @@ body.is-fullscreen-mode #wpfooter {
 	gap: 8px;
 }
 
-/* Field badges */
-.wpct-field-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 2px 6px;
-	border-radius: 2px;
-	font-size: 11px;
-	font-weight: 500;
-	text-transform: uppercase;
-	letter-spacing: 0.3px;
-}
-
-.wpct-field-badge--builtin {
-	background: #e7f3ff;
-	color: #0073aa;
-}
-
-/* Status badges */
-.wpct-status-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 2px 8px;
-	border-radius: 2px;
-	font-size: 12px;
-	font-weight: 500;
-}
-
-.wpct-status-badge--enabled {
-	background: #e7f5e7;
-	color: #1e7b1e;
-}
-
-.wpct-status-badge--disabled {
-	background: #f0f0f0;
-	color: #757575;
-}
 
 /* Support Field Modal */
 .wpct-support-field-modal .components-modal__content {
@@ -470,25 +434,6 @@ body.is-fullscreen-mode #wpfooter {
 	font-size: 13px;
 	font-weight: 600;
 	color: #1e1e1e;
-}
-
-.wpct-sidebar-settings__badge {
-	display: inline-block;
-	margin-top: 8px;
-	padding: 2px 8px;
-	border-radius: 2px;
-	font-size: 12px;
-	font-weight: 500;
-}
-
-.wpct-sidebar-settings__badge--public {
-	background: #e7f5e7;
-	color: #1e7b1e;
-}
-
-.wpct-sidebar-settings__badge--private {
-	background: #f0f0f0;
-	color: #50575e;
 }
 
 /* Settings modal */

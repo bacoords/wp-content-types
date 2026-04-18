@@ -23,6 +23,7 @@ import { useFormData } from './hooks/useFormData';
 import { useFieldsManager } from './hooks/useFieldsManager';
 import AIChat from '../components/AIChat';
 import ContentTypeSettingsModal from '../components/ContentTypeSettingsModal';
+import Badge from '../components/Badge';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
 const contentTypeSlug = window.wpctSettings?.contentTypeSlug;
@@ -67,19 +68,10 @@ function EditorHeader( { title, isSaving, hasEdits, onSave, source, slug } ) {
 				<Icon icon={ chevronRight } size={ 16 } />
 				<strong>{ title || __( 'New Content Type', 'wp-content-types' ) }</strong>
 				{ isReadOnly && (
-					<span style={ {
-						display: 'inline-flex',
-						alignItems: 'center',
-						gap: '4px',
-						marginLeft: '8px',
-						padding: '2px 8px',
-						borderRadius: '2px',
-						fontSize: '12px',
-						backgroundColor: '#f0f0f0',
-						color: '#50575e',
-					} }>
-						{ source === 'hardcoded' && <Icon icon={ lock } size={ 12 } /> }
-						{ getSourceBadgeLabel( source, slug ) }
+					<span style={ { marginLeft: '8px' } }>
+						<Badge intent="default" icon={ source === 'hardcoded' ? lock : null }>
+							{ getSourceBadgeLabel( source, slug ) }
+						</Badge>
 					</span>
 				) }
 			</nav>
@@ -224,11 +216,11 @@ function EditorSidebar( { contentTypeId, contentTypeSlug, fieldsManager, formDat
 							size="small"
 						/>
 					</div>
-					<span className={ `wpct-sidebar-settings__badge wpct-sidebar-settings__badge--${ formData.public ? 'public' : 'private' }` }>
-						{ formData.public
-							? __( 'Public', 'wp-content-types' )
-							: __( 'Private', 'wp-content-types' ) }
-					</span>
+					<div style={ { marginTop: '8px' } }>
+						<Badge intent={ formData.public ? 'success' : 'default' }>
+							{ formData.public ? __( 'Public', 'wp-content-types' ) : __( 'Private', 'wp-content-types' ) }
+						</Badge>
+					</div>
 					{ config.public && slug && (
 						<div className="wpct-template-links">
 							{ singleTemplateExists === null ? (
