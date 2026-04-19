@@ -87,3 +87,66 @@
 	position: relative;
 	min-height: 400px;
 }
+
+/**
+ * Image Field Styles
+ */
+.wpct-image-field {
+	margin-top: 8px;
+}
+
+.wpct-image-field__preview {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.wpct-image-field__loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 120px;
+	background: #f0f0f0;
+	border-radius: 4px;
+}
+
+.wpct-image-field__image-button {
+	display: block;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.wpct-image-field__image-button:hover {
+	opacity: 0.9;
+}
+
+.wpct-image-field__image-button:focus {
+	outline: 2px solid var(--wp-admin-theme-color, #007cba);
+	outline-offset: 2px;
+}
+
+.wpct-image-field__image {
+	display: block;
+	max-width: 100%;
+	max-height: 200px;
+	width: auto;
+	height: auto;
+	border-radius: 4px;
+	object-fit: contain;
+}
+
+.wpct-image-field__actions {
+	display: flex;
+	gap: 8px;
+}
+
+.wpct-image-field__select-button {
+	min-height: 120px;
+	width: 100%;
+	justify-content: center;
+	border-style: dashed;
+}

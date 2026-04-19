@@ -28,6 +28,7 @@ require_once WPCT_PATH . 'includes/class-wpct-ai-chat.php';
 // Field types.
 require_once WPCT_PATH . 'includes/field-types/class-wpct-field-type.php';
 require_once WPCT_PATH . 'includes/field-types/class-wpct-field-type-text.php';
+require_once WPCT_PATH . 'includes/field-types/class-wpct-field-type-image.php';
 
 // Initialize with priorities to ensure proper ordering.
 add_action( 'init', array( 'WPCT_Content_Type', 'init' ), 5 );        // Internal post type first.

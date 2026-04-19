@@ -16,6 +16,7 @@ export const FIELD_TYPE_OPTIONS = [
 	{ value: 'select', label: __( 'Select', 'wp-content-types' ) },
 	{ value: 'radio', label: __( 'Radio', 'wp-content-types' ) },
 	{ value: 'checkbox', label: __( 'Checkbox', 'wp-content-types' ) },
+	{ value: 'image', label: __( 'Image', 'wp-content-types' ) },
 ];
 
 /**

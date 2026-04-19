@@ -17,8 +17,14 @@ import {
 	useState,
 } from '@wordpress/element';
 import { DataForm } from '@wordpress/dataviews';
-import { TextareaControl } from '@wordpress/components';
+import {
+	TextareaControl,
+	Button,
+	Spinner,
+	BaseControl,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { MediaUpload, MediaUploadCheck } from '@wordpress/block-editor';
 
 /**
  * Map field type to DataForm field type.
@@ -37,6 +43,7 @@ function mapFieldType( type ) {
 		select: 'text',
 		radio: 'text',
 		checkbox: 'text',
+		image: 'integer', // image stores attachment ID
 	};
 
 	return typeMap[ type ] || 'text';
@@ -59,6 +66,129 @@ function createTextareaEdit( fieldKey, label ) {
 				onChange={ ( value ) => onChange( { [ fieldKey ]: value } ) }
 				rows={ 4 }
 			/>
+		);
+	};
+}
+
+/**
+ * Create an image Edit component for DataForm.
+ *
+ * @param {string} fieldKey    The field key.
+ * @param {string} label       The field label.
+ * @param {string} description The field description.
+ * @return {Function} Edit component.
+ */
+function createImageEdit( fieldKey, label, description ) {
+	return function ImageEdit( { data, onChange } ) {
+		const imageId = data[ fieldKey ] ? parseInt( data[ fieldKey ], 10 ) : 0;
+
+		// Fetch the image data if we have an ID
+		const { media, isLoading } = useSelect(
+			( select ) => {
+				if ( ! imageId ) {
+					return { media: null, isLoading: false };
+				}
+				const mediaItem = select( 'core' ).getMedia( imageId, {
+					context: 'view',
+				} );
+				const isResolving = select( 'core/data' ).isResolving(
+					'core',
+					'getMedia',
+					[ imageId, { context: 'view' } ]
+				);
+				return {
+					media: mediaItem,
+					isLoading: isResolving,
+				};
+			},
+			[ imageId ]
+		);
+
+		const imageUrl = media?.source_url;
+		const imageAlt = media?.alt_text || '';
+
+		return (
+			<BaseControl
+				id={ `wpct-image-field-${ fieldKey }` }
+				label={ label }
+				help={ description }
+				__nextHasNoMarginBottom
+			>
+				<div className="wpct-image-field">
+					<MediaUploadCheck>
+						<MediaUpload
+							onSelect={ ( selectedMedia ) => {
+								onChange( { [ fieldKey ]: selectedMedia.id } );
+							} }
+							allowedTypes={ [ 'image' ] }
+							value={ imageId }
+							render={ ( { open } ) => (
+								<div className="wpct-image-field__preview">
+									{ isLoading && (
+										<div className="wpct-image-field__loading">
+											<Spinner />
+										</div>
+									) }
+									{ ! isLoading && imageUrl && (
+										<>
+											<button
+												type="button"
+												className="wpct-image-field__image-button"
+												onClick={ open }
+											>
+												<img
+													src={ imageUrl }
+													alt={ imageAlt }
+													className="wpct-image-field__image"
+												/>
+											</button>
+											<div className="wpct-image-field__actions">
+												<Button
+													variant="secondary"
+													size="small"
+													onClick={ open }
+												>
+													{ __(
+														'Replace',
+														'wp-content-types'
+													) }
+												</Button>
+												<Button
+													variant="tertiary"
+													size="small"
+													isDestructive
+													onClick={ () =>
+														onChange( {
+															[ fieldKey ]: 0,
+														} )
+													}
+												>
+													{ __(
+														'Remove',
+														'wp-content-types'
+													) }
+												</Button>
+											</div>
+										</>
+									) }
+									{ ! isLoading && ! imageUrl && (
+										<Button
+											variant="secondary"
+											onClick={ open }
+											className="wpct-image-field__select-button"
+										>
+											{ __(
+												'Select Image',
+												'wp-content-types'
+											) }
+										</Button>
+									) }
+								</div>
+							) }
+						/>
+					</MediaUploadCheck>
+				</div>
+			</BaseControl>
 		);
 	};
 }
@@ -90,6 +220,15 @@ function buildDataFormFields( fields ) {
 			dataFormField.Edit = createTextareaEdit(
 				field.key,
 				field.label || field.key
+			);
+		}
+
+		// Image fields need a custom Edit component
+		if ( field.type === 'image' ) {
+			dataFormField.Edit = createImageEdit(
+				field.key,
+				field.label || field.key,
+				field.description || ''
 			);
 		}
 
