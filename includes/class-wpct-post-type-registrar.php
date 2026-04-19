@@ -62,6 +62,46 @@ class WPCT_Post_Type_Registrar {
 		// Schedule rewrite flush when content types change.
 		add_action( 'save_post_' . WPCT_Content_Type::POST_TYPE, array( __CLASS__, 'schedule_flush' ) );
 		add_action( 'before_delete_post', array( __CLASS__, 'maybe_schedule_flush_on_delete' ) );
+
+		// Protect our meta keys from the Custom Fields metabox to prevent duplicate saves.
+		add_filter( 'is_protected_meta', array( __CLASS__, 'protect_content_type_meta' ), 10, 2 );
+	}
+
+	/**
+	 * Mark content type meta keys as protected.
+	 *
+	 * This prevents them from appearing in the Custom Fields metabox,
+	 * which would cause duplicate saves with stale values.
+	 *
+	 * @param bool   $is_protected Whether the meta key is protected.
+	 * @param string $meta_key     The meta key.
+	 * @return bool
+	 */
+	public static function protect_content_type_meta( $is_protected, $meta_key ) {
+		// Get all registered content type field keys.
+		static $field_keys = null;
+
+		if ( null === $field_keys ) {
+			$field_keys    = array();
+			$content_types = WPCT_Content_Type::get_all();
+
+			foreach ( $content_types as $content_type ) {
+				$config = $content_type['config'] ?? array();
+				$fields = self::collect_all_fields( $config );
+
+				foreach ( $fields as $field ) {
+					if ( ! empty( $field['key'] ) ) {
+						$field_keys[] = $field['key'];
+					}
+				}
+			}
+		}
+
+		if ( in_array( $meta_key, $field_keys, true ) ) {
+			return true;
+		}
+
+		return $is_protected;
 	}
 
 	/**

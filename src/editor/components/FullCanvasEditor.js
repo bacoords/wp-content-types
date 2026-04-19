@@ -7,8 +7,7 @@
 
 /* global MutationObserver */
 
-import { useEntityProp } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import {
 	createPortal,
 	useMemo,
@@ -18,6 +17,7 @@ import {
 } from '@wordpress/element';
 import { DataForm } from '@wordpress/dataviews';
 import {
+	TextControl,
 	TextareaControl,
 	Button,
 	Spinner,
@@ -25,7 +25,6 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { MediaUpload, MediaUploadCheck } from '@wordpress/block-editor';
-import { useRequiredFieldValidation } from '../hooks/useRequiredFieldValidation';
 
 /**
  * Map field type to DataForm field type.
@@ -48,6 +47,27 @@ function mapFieldType( type ) {
 	};
 
 	return typeMap[ type ] || 'text';
+}
+
+/**
+ * Create a text Edit component for DataForm.
+ * Uses controlled value prop to properly sync with editor store.
+ *
+ * @param {string} fieldKey The field key.
+ * @param {string} label    The field label.
+ * @return {Function} Edit component.
+ */
+function createTextEdit( fieldKey, label ) {
+	return function TextEdit( { data, onChange } ) {
+		return (
+			<TextControl
+				__nextHasNoMarginBottom
+				label={ label }
+				value={ data[ fieldKey ] || '' }
+				onChange={ ( value ) => onChange( { [ fieldKey ]: value } ) }
+			/>
+		);
+	};
 }
 
 /**
@@ -216,6 +236,18 @@ function buildDataFormFields( fields ) {
 			dataFormField.placeholder = field.placeholder;
 		}
 
+		// Text fields need custom Edit component with controlled value prop
+		if (
+			field.type === 'text' ||
+			field.type === 'email' ||
+			field.type === 'url'
+		) {
+			dataFormField.Edit = createTextEdit(
+				field.key,
+				field.label || field.key
+			);
+		}
+
 		// Textarea fields need a custom Edit component
 		if ( field.type === 'textarea' ) {
 			dataFormField.Edit = createTextareaEdit(
@@ -251,11 +283,6 @@ function buildDataFormFields( fields ) {
 			} ) );
 		}
 
-		// Add required validation
-		if ( field.required ) {
-			dataFormField.isValid = { required: true };
-		}
-
 		return dataFormField;
 	} );
 }
@@ -263,9 +290,6 @@ function buildDataFormFields( fields ) {
 export default function FullCanvasEditor( { includeTitle = true } ) {
 	const contentType = window.wpctEditorSettings?.contentType;
 	const [ portalContainer, setPortalContainer ] = useState( null );
-
-	// Lock publishing when required fields are empty
-	useRequiredFieldValidation();
 
 	const contentTypeFields = useMemo(
 		() => contentType?.config?.fields || [],
@@ -286,26 +310,26 @@ export default function FullCanvasEditor( { includeTitle = true } ) {
 		return supports.includes( 'title' );
 	}, [ contentType, includeTitle ] );
 
-	const postType = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPostType();
-	}, [] );
+	// Get post data directly from the editor store (required for CRDT sync)
+	// No dependency array - allows automatic re-subscription to store changes
+	const { meta, title } = useSelect( ( select ) => {
+		const editor = select( 'core/editor' );
+		return {
+			meta: editor.getEditedPostAttribute( 'meta' ) || {},
+			title: editor.getEditedPostAttribute( 'title' ) || '',
+		};
+	} );
 
-	const [ meta, setMeta ] = useEntityProp( 'postType', postType, 'meta' );
-	const [ title, setTitle ] = useEntityProp( 'postType', postType, 'title' );
+	const { editPost } = useDispatch( 'core/editor' );
 
-	const formData = useMemo( () => {
-		const data = {};
-
-		// Add title to form data if supported.
-		if ( supportsTitle ) {
-			data._title = title || '';
-		}
-
-		contentTypeFields.forEach( ( field ) => {
-			data[ field.key ] = meta?.[ field.key ] ?? '';
-		} );
-		return data;
-	}, [ meta, contentTypeFields, supportsTitle, title ] );
+	// Build form data directly from store values - no memoization to avoid stale data
+	const formData = {};
+	if ( supportsTitle ) {
+		formData._title = title;
+	}
+	contentTypeFields.forEach( ( field ) => {
+		formData[ field.key ] = meta[ field.key ] ?? '';
+	} );
 
 	const dataFormFields = useMemo( () => {
 		const fields = [];
@@ -343,23 +367,18 @@ export default function FullCanvasEditor( { includeTitle = true } ) {
 		( edits ) => {
 			// Handle title changes separately.
 			if ( '_title' in edits ) {
-				setTitle( edits._title );
-				// Remove title from edits before updating meta.
 				const { _title, ...metaEdits } = edits;
+				// Update title and meta together if both changed
+				const postEdits = { title: _title };
 				if ( Object.keys( metaEdits ).length > 0 ) {
-					setMeta( {
-						...meta,
-						...metaEdits,
-					} );
+					postEdits.meta = metaEdits;
 				}
+				editPost( postEdits );
 			} else {
-				setMeta( {
-					...meta,
-					...edits,
-				} );
+				editPost( { meta: edits } );
 			}
 		},
-		[ meta, setMeta, setTitle ]
+		[ editPost ]
 	);
 
 	// Find and set up the portal container
