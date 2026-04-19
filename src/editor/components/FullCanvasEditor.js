@@ -25,6 +25,7 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { MediaUpload, MediaUploadCheck } from '@wordpress/block-editor';
+import { useRequiredFieldValidation } from '../hooks/useRequiredFieldValidation';
 
 /**
  * Map field type to DataForm field type.
@@ -250,6 +251,11 @@ function buildDataFormFields( fields ) {
 			} ) );
 		}
 
+		// Add required validation
+		if ( field.required ) {
+			dataFormField.isValid = { required: true };
+		}
+
 		return dataFormField;
 	} );
 }
@@ -257,6 +263,9 @@ function buildDataFormFields( fields ) {
 export default function FullCanvasEditor( { includeTitle = true } ) {
 	const contentType = window.wpctEditorSettings?.contentType;
 	const [ portalContainer, setPortalContainer ] = useState( null );
+
+	// Lock publishing when required fields are empty
+	useRequiredFieldValidation();
 
 	const contentTypeFields = useMemo(
 		() => contentType?.config?.fields || [],
