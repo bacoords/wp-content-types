@@ -243,6 +243,17 @@ export default function FullCanvasEditor( { includeTitle = true } ) {
 			return null;
 		};
 
+		const cleanup = () => {
+			document.body.classList.remove( 'wpct-full-canvas-active' );
+			// Remove the portal container
+			const container = document.querySelector(
+				'.wpct-full-canvas-container'
+			);
+			if ( container && container.parentNode ) {
+				container.parentNode.removeChild( container );
+			}
+		};
+
 		// Add body class
 		document.body.classList.add( 'wpct-full-canvas-active' );
 
@@ -267,13 +278,11 @@ export default function FullCanvasEditor( { includeTitle = true } ) {
 
 			return () => {
 				observer.disconnect();
-				document.body.classList.remove( 'wpct-full-canvas-active' );
+				cleanup();
 			};
 		}
 
-		return () => {
-			document.body.classList.remove( 'wpct-full-canvas-active' );
-		};
+		return cleanup;
 	}, [] );
 
 	const content =
