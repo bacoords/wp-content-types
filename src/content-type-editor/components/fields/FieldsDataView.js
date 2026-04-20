@@ -27,6 +27,7 @@ export default function FieldsDataView( {
 		type: 'table',
 		titleField: 'label',
 		fields: [ 'key', 'type', 'status' ],
+		layout: { density: 'compact' },
 	} );
 
 	// Modal state

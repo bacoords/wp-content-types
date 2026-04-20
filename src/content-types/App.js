@@ -273,6 +273,7 @@ export default function App() {
 		type: 'table',
 		titleField: 'name',
 		fields: [ 'slug', 'source', 'visibility' ],
+		layout: { density: 'compact' },
 	} );
 
 	const [ isAddModalOpen, setIsAddModalOpen ] = useState( false );
