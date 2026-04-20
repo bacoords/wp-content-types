@@ -28,7 +28,7 @@ function generateId() {
  * @param {string} label The label to convert to a key.
  * @return {string} The generated key.
  */
-function generateKey( label ) {
+export function generateKey( label ) {
 	return label
 		.toLowerCase()
 		.replace( /[^a-z0-9]+/g, '_' )
@@ -270,19 +270,17 @@ export function useFieldsManager( { config, updateConfig } ) {
 				0
 			);
 
-			// Generate key from label if provided, otherwise use provided key or default
+			// Generate key from label if provided, otherwise use provided key
+			// Default to empty strings so user fills them in
 			let fieldKey = fieldData.key;
 			if ( ! fieldKey && fieldData.label ) {
 				fieldKey = generateKey( fieldData.label );
 			}
-			if ( ! fieldKey ) {
-				fieldKey = 'new_field';
-			}
 
 			const newField = {
 				_id: generateId(),
-				key: makeUniqueKey( fieldKey, fields ),
-				label: fieldData.label || 'New Field',
+				key: fieldKey ? makeUniqueKey( fieldKey, fields ) : '',
+				label: fieldData.label || '',
 				type: fieldData.type || 'text',
 				required: fieldData.required || false,
 				position: maxPosition + 10,

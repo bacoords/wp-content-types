@@ -20,6 +20,7 @@ import {
 } from '@wordpress/element';
 import { getFieldEditorFields } from '../../fields/fieldEditorFields';
 import { getFieldEditorForm } from '../../forms/fieldEditorForm';
+import { generateKey } from '../../hooks/useFieldsManager';
 
 /**
  * Convert options string to array format.
@@ -165,6 +166,9 @@ export default function FieldEditorModal( {
 	// Track which field we're editing by _id to know when to reset local state
 	const fieldIdRef = useRef( null );
 
+	// Track if user has manually edited the key field
+	const keyManuallyEditedRef = useRef( false );
+
 	// Local state for form data
 	const [ localData, setLocalData ] = useState( () => flattenField( field ) );
 
@@ -173,6 +177,8 @@ export default function FieldEditorModal( {
 		if ( field?._id !== fieldIdRef.current ) {
 			fieldIdRef.current = field?._id;
 			setLocalData( flattenField( field ) );
+			// Reset manual edit tracking - consider key manually edited if it already has a value
+			keyManuallyEditedRef.current = Boolean( field?.key );
 		}
 	}, [ field ] );
 
@@ -187,7 +193,21 @@ export default function FieldEditorModal( {
 
 	// Handle changes from DataForm - update local state only
 	const handleChange = useCallback( ( edits ) => {
-		setLocalData( ( prev ) => ( { ...prev, ...edits } ) );
+		setLocalData( ( prev ) => {
+			const newData = { ...prev, ...edits };
+
+			// If user is editing the key field, mark it as manually edited
+			if ( 'key' in edits ) {
+				keyManuallyEditedRef.current = true;
+			}
+
+			// If label changed and key hasn't been manually edited, auto-generate key
+			if ( 'label' in edits && ! keyManuallyEditedRef.current ) {
+				newData.key = generateKey( edits.label );
+			}
+
+			return newData;
+		} );
 	}, [] );
 
 	// Handle save
@@ -218,9 +238,8 @@ export default function FieldEditorModal( {
 		return null;
 	}
 
-	// Modal title
-	const isNewField =
-		field.label === 'New Field' && field.key?.startsWith( 'new_field' );
+	// Modal title - new fields have empty label and key
+	const isNewField = ! field.label && ! field.key;
 	const modalTitle = isNewField
 		? __( 'Add Field', 'wp-content-types' )
 		: __( 'Edit Field', 'wp-content-types' );
