@@ -1,4 +1,4 @@
-# WP Content Types
+# WP Content Types (alpha)
 
 A native WordPress content modeling system built for the Gutenberg era.
 
@@ -25,15 +25,19 @@ This plugin is being developed with an eye toward WordPress 7.0's Connectors ini
 
 ## Installation
 
-1. Download or clone this repository
+1. Download the latest release.
 2. Place the `wp-content-types` folder in your `wp-content/plugins/` directory
 3. Activate the plugin through the WordPress admin
-4. Requires the Gutenberg plugin as a dependency
+
+## Development
+
+1. Clone the repository and navigate to the plugin directory.
+2. Run `npm install` and `composer install` to install dependencies.
+3. Use `npm run build` to build the plugin assets.
 
 ## Requirements
 
-- WordPress 6.5+
-- Gutenberg plugin (latest version recommended)
+- WordPress 6.9 (7.0+ for AI features)
 - PHP 7.4+
 
 ## Status
