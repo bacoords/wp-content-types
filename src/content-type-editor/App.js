@@ -332,7 +332,7 @@ function EditorSidebar( {
 			<Panel>
 				<PanelBody
 					title={ __( 'AI Assistant', 'wp-content-types' ) }
-					initialOpen={ ! isReadOnly ? false : true }
+					initialOpen={ true }
 				>
 					<AIChat
 						contentTypeId={ contentTypeId }

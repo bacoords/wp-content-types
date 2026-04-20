@@ -226,17 +226,6 @@ function ListSidebar( {
 						onContentTypeCreated={ onContentTypeCreated }
 					/>
 				</PanelBody>
-				<PanelBody
-					title={ __( 'About', 'wp-content-types' ) }
-					initialOpen={ false }
-				>
-					<p>
-						{ __(
-							'Create and manage custom content types for your site.',
-							'wp-content-types'
-						) }
-					</p>
-				</PanelBody>
 			</Panel>
 		</div>
 	);
