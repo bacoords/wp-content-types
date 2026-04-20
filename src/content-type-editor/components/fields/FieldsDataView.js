@@ -6,28 +6,12 @@
  */
 import { useState, useCallback, useMemo } from '@wordpress/element';
 import { DataViews } from '@wordpress/dataviews';
-import { Button } from '@wordpress/components';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { plus } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import FieldEditorModal from './FieldEditorModal';
 import SupportFieldModal from './SupportFieldModal';
+import FieldTypePicker from './FieldTypePicker';
 import Badge from '../../../components/Badge';
-
-/**
- * Field type labels for display.
- */
-const FIELD_TYPE_LABELS = {
-	text: __( 'Text', 'wp-content-types' ),
-	textarea: __( 'Textarea', 'wp-content-types' ),
-	number: __( 'Number', 'wp-content-types' ),
-	email: __( 'Email', 'wp-content-types' ),
-	url: __( 'URL', 'wp-content-types' ),
-	date: __( 'Date', 'wp-content-types' ),
-	select: __( 'Select', 'wp-content-types' ),
-	radio: __( 'Radio', 'wp-content-types' ),
-	checkbox: __( 'Checkbox', 'wp-content-types' ),
-};
+import { getFieldTypeLabel, FIELD_TYPES } from '../../fields/fieldEditorFields';
 
 export default function FieldsDataView( {
 	fields,
@@ -110,14 +94,17 @@ export default function FieldsDataView( {
 		}
 	}, [ editingSupportField, onToggleSupport ] );
 
-	// Handle adding a new field
-	const handleAddField = useCallback( () => {
-		const newField = onAddField();
-		// Open the modal for the new field
-		if ( newField ) {
-			setEditingField( newField );
-		}
-	}, [ onAddField ] );
+	// Handle adding a new field with a specific type
+	const handleAddField = useCallback(
+		( type = 'text' ) => {
+			const newField = onAddField( { type } );
+			// Open the modal for the new field
+			if ( newField ) {
+				setEditingField( newField );
+			}
+		},
+		[ onAddField ]
+	);
 
 	// DataViews field definitions - inside component to access handleEdit
 	const dataViewFields = useMemo(
@@ -168,17 +155,19 @@ export default function FieldsDataView( {
 					if ( item.isBuiltIn ) {
 						return __( 'WordPress', 'wp-content-types' );
 					}
-					return FIELD_TYPE_LABELS[ item.type ] || item.type;
+					return getFieldTypeLabel( item.type );
 				},
 				elements: [
 					{
 						value: __( 'WordPress', 'wp-content-types' ),
 						label: __( 'WordPress', 'wp-content-types' ),
 					},
-					...Object.values( FIELD_TYPE_LABELS ).map( ( label ) => ( {
-						value: label,
-						label,
-					} ) ),
+					...Object.entries( FIELD_TYPES ).map(
+						( [ , config ] ) => ( {
+							value: config.label,
+							label: config.label,
+						} )
+					),
 				],
 			},
 			{
@@ -303,11 +292,7 @@ export default function FieldsDataView( {
 	);
 
 	// Header button for DataViews toolbar
-	const headerActions = (
-		<Button variant="primary" icon={ plus } onClick={ handleAddField }>
-			{ __( 'Add Field', 'wp-content-types' ) }
-		</Button>
-	);
+	const headerActions = <FieldTypePicker onSelect={ handleAddField } />;
 
 	return (
 		<div className="wpct-fields-dataview">
