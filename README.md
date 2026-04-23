@@ -2,6 +2,8 @@
 
 A native WordPress content modeling system built for the Gutenberg era.
 
+[Try it out on Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/bacoords/wp-content-types/refs/head/main/brueprint.json)
+
 ## What is this?
 
 WP Content Types lets you create and manage custom post types and custom fields directly in WordPress without relying on legacy plugins. It's designed from the ground up around modern WordPress architecture—no meta boxes, no classic editor screens, just a clean Gutenberg-native experience.
