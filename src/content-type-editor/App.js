@@ -252,6 +252,11 @@ function EditorSidebar( {
 							size="small"
 						/>
 					</div>
+					{ formData.description && (
+						<p className="wpct-sidebar-settings__description">
+							{ formData.description }
+						</p>
+					) }
 					<div style={ { marginTop: '8px' } }>
 						<Badge
 							intent={ formData.public ? 'success' : 'default' }

@@ -47,6 +47,23 @@ const settingsFields = [
 		),
 	},
 	{
+		id: 'description',
+		label: __( 'Description', 'wp-content-types' ),
+		type: 'text',
+		Edit: ( { data, onChange } ) => {
+			const { TextareaControl } = wp.components;
+			return (
+				<TextareaControl
+					__nextHasNoMarginBottom
+					label={ __( 'Description', 'wp-content-types' ) }
+					value={ data.description || '' }
+					onChange={ ( value ) => onChange( { description: value } ) }
+					rows={ 2 }
+				/>
+			);
+		},
+	},
+	{
 		id: 'public',
 		label: __( 'Public', 'wp-content-types' ),
 		type: 'text',
@@ -68,7 +85,7 @@ const settingsFields = [
  * Form layout for the content type settings.
  */
 const settingsForm = {
-	fields: [ 'name', 'slug', 'public' ],
+	fields: [ 'name', 'slug', 'description', 'public' ],
 };
 
 /**
@@ -91,6 +108,7 @@ export default function ContentTypeSettingsModal( {
 	const [ formData, setFormData ] = useState( () => ( {
 		name: contentType?.name || '',
 		slug: contentType?.slug || '',
+		description: contentType?.config?.description || '',
 		public: contentType?.public ?? true,
 	} ) );
 	const [ isSaving, setIsSaving ] = useState( false );
@@ -135,6 +153,7 @@ export default function ContentTypeSettingsModal( {
 						slug: formData.slug,
 						config: {
 							...contentType.config,
+							description: formData.description,
 							public: formData.public,
 						},
 					},
@@ -154,6 +173,7 @@ export default function ContentTypeSettingsModal( {
 						slug: formData.slug,
 						status: 'publish',
 						config: {
+							description: formData.description,
 							public: formData.public,
 						},
 					},
