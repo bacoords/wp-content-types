@@ -118,19 +118,32 @@ class WPCT_Post_Type_Registrar {
 	/**
 	 * Register a single post type.
 	 *
+	 * For existing post types (like 'post', 'page'), this registers only the meta fields.
+	 * For new post types, this registers both the post type and its meta fields.
+	 *
 	 * @param array $content_type Content type data.
-	 * @return WP_Post_Type|WP_Error|false
+	 * @return WP_Post_Type|WP_Error|bool
 	 */
 	public static function register_single( $content_type ) {
 		$slug = $content_type['slug'] ?? '';
 
-		// Validate the slug.
-		if ( ! self::is_valid_slug( $slug ) ) {
+		// Always validate basic slug format.
+		if ( ! self::is_valid_slug_format( $slug ) ) {
 			return false;
 		}
 
-		// Skip if already registered (hardcoded types take precedence).
+		// Path 1: Existing post type - just register meta fields.
 		if ( post_type_exists( $slug ) ) {
+			// Ensure custom-fields support for REST API meta exposure.
+			if ( ! post_type_supports( $slug, 'custom-fields' ) ) {
+				add_post_type_support( $slug, 'custom-fields' );
+			}
+			self::register_fields_meta( $slug, $content_type );
+			return true;
+		}
+
+		// Path 2: New post type - validate not reserved, then register.
+		if ( self::is_reserved_slug( $slug ) ) {
 			return false;
 		}
 
@@ -300,6 +313,38 @@ class WPCT_Post_Type_Registrar {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Validate slug format only (length, characters).
+	 *
+	 * Does not check reserved slugs - use for extending existing post types.
+	 *
+	 * @param string $slug The slug to validate.
+	 * @return bool
+	 */
+	private static function is_valid_slug_format( $slug ) {
+		// Must be 1-20 characters.
+		if ( empty( $slug ) || strlen( $slug ) > 20 ) {
+			return false;
+		}
+
+		// Must be lowercase alphanumeric with underscores only.
+		if ( ! preg_match( '/^[a-z0-9_]+$/', $slug ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if a slug is reserved for WordPress core.
+	 *
+	 * @param string $slug The slug to check.
+	 * @return bool
+	 */
+	private static function is_reserved_slug( $slug ) {
+		return in_array( $slug, self::$reserved_slugs, true );
 	}
 
 	/**
