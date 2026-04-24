@@ -218,6 +218,19 @@ body.is-fullscreen-mode #wpfooter {
 	text-decoration: underline;
 }
 
+/* Clickable status toggle badge */
+.wpct-status-toggle {
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	cursor: pointer;
+}
+
+.wpct-status-toggle:hover {
+	opacity: 0.8;
+}
+
 /* JSON textarea - full width */
 .wpct-json-textarea {
 	width: 100%;

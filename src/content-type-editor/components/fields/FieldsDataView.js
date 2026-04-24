@@ -206,13 +206,23 @@ export default function FieldsDataView( {
 				render: ( { item } ) => {
 					if ( item.isBuiltIn ) {
 						return (
-							<Badge
-								intent={ item.enabled ? 'success' : 'default' }
+							<button
+								type="button"
+								className="wpct-status-toggle"
+								onClick={ () =>
+									onToggleSupport( item.supportKey )
+								}
 							>
-								{ item.enabled
-									? __( 'Enabled', 'wp-content-types' )
-									: __( 'Disabled', 'wp-content-types' ) }
-							</Badge>
+								<Badge
+									intent={
+										item.enabled ? 'success' : 'default'
+									}
+								>
+									{ item.enabled
+										? __( 'Enabled', 'wp-content-types' )
+										: __( 'Disabled', 'wp-content-types' ) }
+								</Badge>
+							</button>
 						);
 					}
 					const isRequired = item.required === true;
@@ -249,7 +259,7 @@ export default function FieldsDataView( {
 				],
 			},
 		],
-		[ handleEdit ]
+		[ handleEdit, onToggleSupport ]
 	);
 
 	// DataViews actions
