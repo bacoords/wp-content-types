@@ -10,6 +10,7 @@ import {
 import { useDispatch } from '@wordpress/data';
 import { useFieldsManager } from '../content-type-editor/hooks/useFieldsManager';
 import { DataViews } from '@wordpress/dataviews';
+import { useView } from '@wordpress/views';
 import {
 	Button,
 	Panel,
@@ -38,6 +39,21 @@ function getManageUrl( slug ) {
 }
 
 const CORE_POST_TYPES = [ 'post', 'page', 'attachment' ];
+
+/**
+ * Default view configuration for the content types DataView.
+ */
+const DEFAULT_VIEW = {
+	type: 'table',
+	titleField: 'name',
+	fields: [ 'slug', 'source', 'visibility' ],
+	layout: { density: 'compact' },
+	groupBy: {
+		field: 'sourceGroup',
+		direction: 'desc',
+		showLabel: false,
+	},
+};
 
 function getSourceLabel( source, slug ) {
 	switch ( source ) {
@@ -278,16 +294,11 @@ export default function App() {
 
 	const data = records || [];
 
-	const [ view, setView ] = useState( {
-		type: 'table',
-		titleField: 'name',
-		fields: [ 'slug', 'source', 'visibility' ],
-		layout: { density: 'compact' },
-		groupBy: {
-			field: 'sourceGroup',
-			direction: 'desc', // Custom first, then Core
-			showLabel: false,
-		},
+	const { view, updateView } = useView( {
+		kind: 'wpct',
+		name: 'content-type',
+		slug: 'list',
+		defaultView: DEFAULT_VIEW,
 	} );
 
 	const [ isAddModalOpen, setIsAddModalOpen ] = useState( false );
@@ -373,7 +384,7 @@ export default function App() {
 						data={ data }
 						isLoading={ isResolving }
 						view={ view }
-						onChangeView={ setView }
+						onChangeView={ updateView }
 					/>
 					<ListSidebar
 						sessionContentType={ sessionContentType }

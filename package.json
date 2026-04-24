@@ -24,7 +24,9 @@
 		"@wordpress/i18n": "^5.0.0",
 		"@wordpress/icons": "^12.2.0",
 		"@wordpress/interface": "^9.29.0",
-		"@wordpress/keyboard-shortcuts": "^5.44.0"
+		"@wordpress/keyboard-shortcuts": "^5.44.0",
+		"@wordpress/preferences": "^4.44.0",
+		"@wordpress/views": "^1.11.0"
 	},
 	"lint-staged": {
 		"*.js": "wp-scripts lint-js",

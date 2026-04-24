@@ -6,12 +6,28 @@
  */
 import { useState, useCallback, useMemo } from '@wordpress/element';
 import { DataViews } from '@wordpress/dataviews';
+import { useView } from '@wordpress/views';
 import { __ } from '@wordpress/i18n';
 import FieldEditorModal from './FieldEditorModal';
 import SupportFieldModal from './SupportFieldModal';
 import FieldTypePicker from './FieldTypePicker';
 import Badge from '../../../components/Badge';
 import { getFieldTypeLabel, FIELD_TYPES } from '../../fields/fieldEditorFields';
+
+/**
+ * Default view configuration for the fields DataView.
+ */
+const DEFAULT_VIEW = {
+	type: 'table',
+	titleField: 'label',
+	fields: [ 'key', 'type', 'status' ],
+	layout: { density: 'compact' },
+	groupBy: {
+		field: 'category',
+		direction: 'asc',
+		showLabel: false,
+	},
+};
 
 export default function FieldsDataView( {
 	fields,
@@ -22,17 +38,12 @@ export default function FieldsDataView( {
 	supports = [],
 	onToggleSupport,
 } ) {
-	// View state for DataViews
-	const [ view, setView ] = useState( {
-		type: 'table',
-		titleField: 'label',
-		fields: [ 'key', 'type', 'status' ],
-		layout: { density: 'compact' },
-		groupBy: {
-			field: 'category',
-			direction: 'asc', // Built-in first, then Custom
-			showLabel: false,
-		},
+	// View state for DataViews with persistence
+	const { view, updateView } = useView( {
+		kind: 'wpct',
+		name: 'field',
+		slug: 'editor',
+		defaultView: DEFAULT_VIEW,
 	} );
 
 	// Modal state
@@ -309,7 +320,7 @@ export default function FieldsDataView( {
 				data={ combinedFields }
 				fields={ dataViewFields }
 				view={ view }
-				onChangeView={ setView }
+				onChangeView={ updateView }
 				paginationInfo={ {
 					totalItems: combinedFields.length,
 					totalPages: 1,
