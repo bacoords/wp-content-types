@@ -2,7 +2,7 @@
 
 A native WordPress content modeling system built for the Gutenberg era.
 
-[Try it out on Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/bacoords/wp-content-types/refs/head/main/brueprint.json)
+[Try it out on Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/bacoords/wp-content-types/refs/heads/main/brueprint.json)
 
 ## What is this?
 
