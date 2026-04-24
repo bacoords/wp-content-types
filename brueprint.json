@@ -12,6 +12,16 @@
     {
       "step": "installPlugin",
       "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "gutenberg"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
         "resource": "url",
         "url": "https://github-proxy.com/proxy/?repo=bacoords/wp-content-types&release=latest&asset=wp-content-types.zip"
       }
