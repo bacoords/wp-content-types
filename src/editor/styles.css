@@ -44,6 +44,15 @@
 	background: #fff;
 	overflow-y: auto;
 	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+/* DataForm container - constrained width and centered */
+.wpct-full-canvas-editor > .dataforms-layouts__wrapper {
+	width: 100%;
+	max-width: 600px;
 }
 
 /* stylelint-disable-next-line no-descending-specificity */
@@ -54,10 +63,6 @@
 .wpct-full-canvas-editor .dataforms-layouts-panel__field-label {
 	font-weight: 500;
 	margin-bottom: 8px;
-}
-
-.wpct-full-canvas-editor > .dataforms-layouts-regular {
-	max-width: 640px;
 }
 
 /* Empty state */
