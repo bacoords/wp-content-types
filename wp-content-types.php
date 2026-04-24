@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP Content Types
  * Description: A content modeling system for WordPress.
- * Version: 0.1.6
+ * Version: 0.1.7
  * Author: Brian Coords
  * Text Domain: wp-content-types
  * Domain Path: /languages

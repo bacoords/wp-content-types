@@ -1,6 +1,6 @@
 {
 	"name": "wp-content-types",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"description": "A content modeling system for WordPress.",
 	"scripts": {
 		"build": "wp-scripts build",
