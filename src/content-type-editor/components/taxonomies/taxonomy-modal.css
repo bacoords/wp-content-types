@@ -1,0 +1,90 @@
+.wpct-taxonomy-modal {
+	max-width: 500px;
+}
+
+.wpct-taxonomy-modal__content {
+	min-height: 200px;
+}
+
+.wpct-taxonomy-modal__choices {
+	text-align: center;
+	padding: 16px 0;
+}
+
+.wpct-taxonomy-modal__intro {
+	color: #757575;
+	margin-bottom: 8px;
+}
+
+.wpct-taxonomy-modal__hint {
+	color: #757575;
+	font-size: 12px;
+	font-style: italic;
+	margin-top: 8px;
+}
+
+.wpct-taxonomy-modal__choice-button {
+	min-width: 180px;
+	padding: 12px 16px !important;
+	height: auto !important;
+}
+
+.wpct-taxonomy-modal__list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 300px;
+	overflow-y: auto;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 4px;
+}
+
+.wpct-taxonomy-modal__list-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	background: #fff;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	cursor: pointer;
+	text-align: left;
+	width: 100%;
+}
+
+.wpct-taxonomy-modal__list-item:hover {
+	background: #f6f7f7;
+}
+
+.wpct-taxonomy-modal__list-item.is-selected {
+	background: #f0f6fc;
+	border-color: #3858e9;
+}
+
+.wpct-taxonomy-modal__list-item-name {
+	flex: 1;
+	font-weight: 500;
+}
+
+.wpct-taxonomy-modal__list-item-slug {
+	color: #757575;
+	font-size: 12px;
+	font-family: monospace;
+}
+
+.wpct-taxonomy-modal__list-item-type {
+	color: #757575;
+	font-size: 12px;
+}
+
+.wpct-taxonomy-modal__footer {
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+}
+
+.wpct-taxonomy-modal__create,
+.wpct-taxonomy-modal__existing {
+	padding: 8px 0;
+}

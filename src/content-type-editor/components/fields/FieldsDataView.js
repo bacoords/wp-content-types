@@ -35,8 +35,12 @@ export default function FieldsDataView( {
 	onUpdateField,
 	onDeleteField,
 	supportFields = [],
+	taxonomyFields = [],
 	supports = [],
 	onToggleSupport,
+	onOpenTaxonomyModal,
+	onRemoveTaxonomy,
+	configTaxonomies = [],
 } ) {
 	// View state for DataViews with persistence
 	const { view, updateView } = useView( {
@@ -50,7 +54,7 @@ export default function FieldsDataView( {
 	const [ editingField, setEditingField ] = useState( null );
 	const [ editingSupportField, setEditingSupportField ] = useState( null );
 
-	// Combine support fields with custom fields
+	// Combine support fields, taxonomy fields, and custom fields
 	const combinedFields = useMemo( () => {
 		// Add enabled status to support fields
 		const supportFieldsWithStatus = supportFields.map( ( field ) => ( {
@@ -59,17 +63,32 @@ export default function FieldsDataView( {
 			type: 'support',
 		} ) );
 
+		// Mark taxonomy fields (always enabled, read-only)
+		const taxonomyFieldsWithStatus = taxonomyFields.map( ( field ) => ( {
+			...field,
+			enabled: true,
+			type: 'taxonomy',
+		} ) );
+
 		// Mark custom fields
 		const customFieldsWithType = fields.map( ( field ) => ( {
 			...field,
 			isBuiltIn: false,
 		} ) );
 
-		return [ ...supportFieldsWithStatus, ...customFieldsWithType ];
-	}, [ supportFields, supports, fields ] );
+		return [
+			...supportFieldsWithStatus,
+			...taxonomyFieldsWithStatus,
+			...customFieldsWithType,
+		];
+	}, [ supportFields, taxonomyFields, supports, fields ] );
 
 	// Handle opening the edit modal
 	const handleEdit = useCallback( ( field ) => {
+		if ( field.isTaxonomy ) {
+			// Taxonomies are read-only, don't open a modal
+			return;
+		}
 		if ( field.isBuiltIn ) {
 			setEditingSupportField( field );
 		} else {
@@ -129,10 +148,15 @@ export default function FieldsDataView( {
 			{
 				id: 'category',
 				label: __( 'Category', 'wp-content-types' ),
-				getValue: ( { item } ) =>
-					item.isBuiltIn
-						? __( 'Built-in', 'wp-content-types' )
-						: __( 'Custom', 'wp-content-types' ),
+				getValue: ( { item } ) => {
+					if ( item.isBuiltIn ) {
+						return __( 'Built-in', 'wp-content-types' );
+					}
+					if ( item.isTaxonomy ) {
+						return __( 'Taxonomy', 'wp-content-types' );
+					}
+					return __( 'Custom', 'wp-content-types' );
+				},
 				enableHiding: false,
 				enableSorting: false,
 			},
@@ -140,15 +164,21 @@ export default function FieldsDataView( {
 				id: 'label',
 				label: __( 'Label', 'wp-content-types' ),
 				getValue: ( { item } ) => item.label || '',
-				render: ( { item } ) => (
-					<button
-						type="button"
-						className="wpct-field-label-link"
-						onClick={ () => handleEdit( item ) }
-					>
-						{ item.label }
-					</button>
-				),
+				render: ( { item } ) => {
+					// Taxonomy fields are read-only, don't make them clickable
+					if ( item.isTaxonomy ) {
+						return <span>{ item.label }</span>;
+					}
+					return (
+						<button
+							type="button"
+							className="wpct-field-label-link"
+							onClick={ () => handleEdit( item ) }
+						>
+							{ item.label }
+						</button>
+					);
+				},
 				enableGlobalSearch: true,
 			},
 			{
@@ -175,12 +205,25 @@ export default function FieldsDataView( {
 					if ( item.isBuiltIn ) {
 						return __( 'WordPress', 'wp-content-types' );
 					}
+					if ( item.isTaxonomy ) {
+						return item.hierarchical
+							? __( 'Hierarchical', 'wp-content-types' )
+							: __( 'Flat', 'wp-content-types' );
+					}
 					return getFieldTypeLabel( item.type );
 				},
 				elements: [
 					{
 						value: __( 'WordPress', 'wp-content-types' ),
 						label: __( 'WordPress', 'wp-content-types' ),
+					},
+					{
+						value: __( 'Hierarchical', 'wp-content-types' ),
+						label: __( 'Hierarchical', 'wp-content-types' ),
+					},
+					{
+						value: __( 'Flat', 'wp-content-types' ),
+						label: __( 'Flat', 'wp-content-types' ),
 					},
 					...Object.entries( FIELD_TYPES ).map(
 						( [ , config ] ) => ( {
@@ -198,6 +241,14 @@ export default function FieldsDataView( {
 						return item.enabled
 							? __( 'Enabled', 'wp-content-types' )
 							: __( 'Disabled', 'wp-content-types' );
+					}
+					if ( item.isTaxonomy ) {
+						if ( item.isManaged ) {
+							return __( 'Custom', 'wp-content-types' );
+						}
+						return item.isCore
+							? __( 'Core', 'wp-content-types' )
+							: __( 'Plugin', 'wp-content-types' );
 					}
 					return item.required
 						? __( 'Required', 'wp-content-types' )
@@ -225,6 +276,22 @@ export default function FieldsDataView( {
 							</button>
 						);
 					}
+					if ( item.isTaxonomy ) {
+						if ( item.isManaged ) {
+							return (
+								<Badge intent="success">
+									{ __( 'Custom', 'wp-content-types' ) }
+								</Badge>
+							);
+						}
+						return (
+							<Badge intent={ item.isCore ? 'info' : 'default' }>
+								{ item.isCore
+									? __( 'Core', 'wp-content-types' )
+									: __( 'Plugin', 'wp-content-types' ) }
+							</Badge>
+						);
+					}
 					const isRequired = item.required === true;
 					return (
 						<span
@@ -249,6 +316,18 @@ export default function FieldsDataView( {
 						label: __( 'Disabled', 'wp-content-types' ),
 					},
 					{
+						value: __( 'Custom', 'wp-content-types' ),
+						label: __( 'Custom', 'wp-content-types' ),
+					},
+					{
+						value: __( 'Core', 'wp-content-types' ),
+						label: __( 'Core', 'wp-content-types' ),
+					},
+					{
+						value: __( 'Plugin', 'wp-content-types' ),
+						label: __( 'Plugin', 'wp-content-types' ),
+					},
+					{
 						value: __( 'Required', 'wp-content-types' ),
 						label: __( 'Required', 'wp-content-types' ),
 					},
@@ -269,6 +348,7 @@ export default function FieldsDataView( {
 				id: 'edit',
 				label: __( 'Edit', 'wp-content-types' ),
 				isPrimary: true,
+				isEligible: ( item ) => ! item.isTaxonomy,
 				callback: ( items ) => {
 					const item = items[ 0 ];
 					handleEdit( item );
@@ -277,7 +357,8 @@ export default function FieldsDataView( {
 			{
 				id: 'enable',
 				label: __( 'Enable', 'wp-content-types' ),
-				isEligible: ( item ) => item.isBuiltIn && ! item.enabled,
+				isEligible: ( item ) =>
+					item.isBuiltIn && ! item.isTaxonomy && ! item.enabled,
 				callback: ( items ) => {
 					const item = items[ 0 ];
 					if ( onToggleSupport ) {
@@ -288,7 +369,8 @@ export default function FieldsDataView( {
 			{
 				id: 'disable',
 				label: __( 'Disable', 'wp-content-types' ),
-				isEligible: ( item ) => item.isBuiltIn && item.enabled,
+				isEligible: ( item ) =>
+					item.isBuiltIn && ! item.isTaxonomy && item.enabled,
 				callback: ( items ) => {
 					const item = items[ 0 ];
 					if ( onToggleSupport ) {
@@ -300,7 +382,7 @@ export default function FieldsDataView( {
 				id: 'delete',
 				label: __( 'Delete', 'wp-content-types' ),
 				isDestructive: true,
-				isEligible: ( item ) => ! item.isBuiltIn,
+				isEligible: ( item ) => ! item.isBuiltIn && ! item.isTaxonomy,
 				callback: ( items ) => {
 					const item = items[ 0 ];
 					/* eslint-disable no-alert */
@@ -317,12 +399,59 @@ export default function FieldsDataView( {
 					/* eslint-enable no-alert */
 				},
 			},
+			{
+				id: 'remove-taxonomy',
+				label: __( 'Remove', 'wp-content-types' ),
+				isDestructive: true,
+				isEligible: ( item ) => {
+					if ( ! item.isTaxonomy ) {
+						return false;
+					}
+					// WPCT-managed taxonomies can always be removed
+					if ( item.isManaged ) {
+						return true;
+					}
+					// External taxonomies added via config can be removed
+					if ( configTaxonomies.includes( item.key ) ) {
+						return true;
+					}
+					return false;
+				},
+				callback: ( items ) => {
+					const item = items[ 0 ];
+					/* eslint-disable no-alert */
+					if (
+						window.confirm(
+							__(
+								'Remove this taxonomy from this content type?',
+								'wp-content-types'
+							)
+						)
+					) {
+						if ( onRemoveTaxonomy ) {
+							onRemoveTaxonomy( item );
+						}
+					}
+					/* eslint-enable no-alert */
+				},
+			},
 		],
-		[ handleEdit, onDeleteField, onToggleSupport ]
+		[
+			handleEdit,
+			onDeleteField,
+			onToggleSupport,
+			onRemoveTaxonomy,
+			configTaxonomies,
+		]
 	);
 
 	// Header button for DataViews toolbar
-	const headerActions = <FieldTypePicker onSelect={ handleAddField } />;
+	const headerActions = (
+		<FieldTypePicker
+			onSelect={ handleAddField }
+			onSelectTaxonomy={ onOpenTaxonomyModal }
+		/>
+	);
 
 	return (
 		<div className="wpct-fields-dataview">

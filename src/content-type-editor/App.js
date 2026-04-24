@@ -35,10 +35,14 @@ import { useFieldsManager } from './hooks/useFieldsManager';
 import AIChat from '../components/AIChat';
 import ContentTypeSettingsModal from '../components/ContentTypeSettingsModal';
 import Badge from '../components/Badge';
+import TaxonomyModal from './components/taxonomies/TaxonomyModal';
 
 const contentTypeId = window.wpctSettings?.contentTypeId;
 const contentTypeSlug = window.wpctSettings?.contentTypeSlug;
 const contentTypeData = window.wpctSettings?.contentTypeData;
+const initialTaxonomies = window.wpctSettings?.taxonomies || [];
+const initialAvailableTaxonomies =
+	window.wpctSettings?.availableTaxonomies || [];
 
 const DEFAULT_CONFIG = {
 	public: true,
@@ -357,7 +361,15 @@ function EditorSidebar( {
 	);
 }
 
-function FieldsTab( { fieldsManager, supports, onToggleSupport } ) {
+function FieldsTab( {
+	fieldsManager,
+	supports,
+	onToggleSupport,
+	taxonomies = [],
+	onOpenTaxonomyModal,
+	onRemoveTaxonomy,
+	configTaxonomies = [],
+} ) {
 	const { fields, addField, updateField, deleteField } = fieldsManager;
 
 	return (
@@ -368,8 +380,12 @@ function FieldsTab( { fieldsManager, supports, onToggleSupport } ) {
 				onUpdateField={ updateField }
 				onDeleteField={ deleteField }
 				supportFields={ SUPPORT_FIELDS }
+				taxonomyFields={ taxonomies }
 				supports={ supports }
 				onToggleSupport={ onToggleSupport }
+				onOpenTaxonomyModal={ onOpenTaxonomyModal }
+				onRemoveTaxonomy={ onRemoveTaxonomy }
+				configTaxonomies={ configTaxonomies }
 			/>
 		</div>
 	);
@@ -430,6 +446,9 @@ function EditorContent( {
 	updateConfig,
 	fieldsManager,
 	source,
+	taxonomies = [],
+	onOpenTaxonomyModal,
+	onRemoveTaxonomy,
 } ) {
 	const isReadOnly = source !== 'database';
 
@@ -488,6 +507,10 @@ function EditorContent( {
 									fieldsManager={ fieldsManager }
 									supports={ supports }
 									onToggleSupport={ handleToggleSupport }
+									taxonomies={ taxonomies }
+									onOpenTaxonomyModal={ onOpenTaxonomyModal }
+									onRemoveTaxonomy={ onRemoveTaxonomy }
+									configTaxonomies={ config.taxonomies || [] }
 								/>
 							);
 						}
@@ -542,6 +565,22 @@ export default function App() {
 		return null;
 	} );
 
+	// Taxonomy state
+	const [ taxonomies, setTaxonomies ] = useState( initialTaxonomies );
+	const [ availableTaxonomies, setAvailableTaxonomies ] = useState(
+		initialAvailableTaxonomies
+	);
+	const [ isTaxonomyModalOpen, setIsTaxonomyModalOpen ] = useState( false );
+	const [ pendingNewTaxonomies, setPendingNewTaxonomies ] = useState( [] );
+
+	// Track baseline managed taxonomy slugs (updated after save)
+	const [ baselineManagedTaxonomySlugs, setBaselineManagedTaxonomySlugs ] =
+		useState( () =>
+			initialTaxonomies
+				.filter( ( t ) => t.isManaged )
+				.map( ( t ) => t.key || t.name )
+		);
+
 	// Determine if we're editing a hardcoded type
 	const isHardcodedType = !! contentTypeSlug && !! contentTypeData;
 	const source = isHardcodedType
@@ -560,7 +599,12 @@ export default function App() {
 	const editedConfig = isHardcodedType
 		? hardcodedState?.config
 		: editedRecord?.config ?? savedConfig;
-	const config = { ...DEFAULT_CONFIG, ...editedConfig };
+
+	// Memoize config to prevent unnecessary re-renders and useCallback dependency changes
+	const config = useMemo(
+		() => ( { ...DEFAULT_CONFIG, ...editedConfig } ),
+		[ editedConfig ]
+	);
 
 	const updateConfig = useCallback(
 		( key, value ) => {
@@ -597,10 +641,118 @@ export default function App() {
 		updateConfig,
 	} );
 
-	const handleSave = async () => {
-		if ( isHardcodedType ) {
-			// For hardcoded types, we need to create a database record to store custom fields
-			try {
+	// Get current post type slug
+	const currentPostTypeSlug = isHardcodedType
+		? contentTypeSlug
+		: editedRecord?.slug ?? record?.slug ?? '';
+
+	// Get current taxonomy slugs attached to this post type
+	const currentTaxonomySlugs = useMemo( () => {
+		return taxonomies.map( ( t ) => t.name || t.key );
+	}, [ taxonomies ] );
+
+	// Compute managed taxonomy changes (for deferred save)
+	const managedTaxonomyChanges = useMemo( () => {
+		const pendingNewSlugs = pendingNewTaxonomies.map( ( t ) => t.slug );
+		const currentManagedSlugs = taxonomies
+			.filter( ( t ) => t.isManaged )
+			.map( ( t ) => t.key || t.name );
+
+		// Added = managed taxonomies in current but not in initial (excluding pending new)
+		const added = currentManagedSlugs.filter(
+			( slug ) =>
+				! baselineManagedTaxonomySlugs.includes( slug ) &&
+				! pendingNewSlugs.includes( slug )
+		);
+
+		// Removed = managed taxonomies in initial but not in current
+		const removed = baselineManagedTaxonomySlugs.filter(
+			( slug ) => ! currentManagedSlugs.includes( slug )
+		);
+
+		return { added, removed };
+	}, [ taxonomies, pendingNewTaxonomies, baselineManagedTaxonomySlugs ] );
+
+	// Check if there are unsaved managed taxonomy changes
+	const hasManagedTaxonomyChanges = useMemo( () => {
+		return (
+			pendingNewTaxonomies.length > 0 ||
+			managedTaxonomyChanges.added.length > 0 ||
+			managedTaxonomyChanges.removed.length > 0
+		);
+	}, [ pendingNewTaxonomies, managedTaxonomyChanges ] );
+
+	// Save handler - applies all pending changes
+	const handleSave = useCallback( async () => {
+		try {
+			// 1. Create pending new taxonomies
+			for ( const taxonomyData of pendingNewTaxonomies ) {
+				await window.wp.apiFetch( {
+					path: '/wp/v2/content-taxonomies',
+					method: 'POST',
+					data: {
+						title: taxonomyData.name,
+						slug: taxonomyData.slug,
+						status: 'publish',
+						config: {
+							hierarchical: taxonomyData.hierarchical,
+							description: taxonomyData.description,
+							public: true,
+							show_in_rest: true,
+							rest_base: taxonomyData.slug,
+							post_types: [ currentPostTypeSlug ],
+						},
+					},
+				} );
+			}
+
+			// 2. Update managed taxonomies that were added
+			for ( const slug of managedTaxonomyChanges.added ) {
+				const taxonomy = availableTaxonomies.find(
+					( t ) => t.slug === slug && t.isManaged
+				);
+				if ( taxonomy ) {
+					const updatedPostTypes = [
+						...( taxonomy.postTypes || [] ),
+						currentPostTypeSlug,
+					];
+					await window.wp.apiFetch( {
+						path: `/wp/v2/content-taxonomies/${ taxonomy.id }`,
+						method: 'PUT',
+						data: {
+							config: {
+								...taxonomy.config,
+								post_types: updatedPostTypes,
+							},
+						},
+					} );
+				}
+			}
+
+			// 3. Update managed taxonomies that were removed
+			for ( const slug of managedTaxonomyChanges.removed ) {
+				const taxonomy = availableTaxonomies.find(
+					( t ) => t.slug === slug && t.isManaged
+				);
+				if ( taxonomy ) {
+					const updatedPostTypes = (
+						taxonomy.postTypes || []
+					).filter( ( pt ) => pt !== currentPostTypeSlug );
+					await window.wp.apiFetch( {
+						path: `/wp/v2/content-taxonomies/${ taxonomy.id }`,
+						method: 'PUT',
+						data: {
+							config: {
+								...taxonomy.config,
+								post_types: updatedPostTypes,
+							},
+						},
+					} );
+				}
+			}
+
+			// 4. Save the content type record
+			if ( isHardcodedType ) {
 				const response = await window.wp.apiFetch( {
 					path: '/wp/v2/content-types',
 					method: 'POST',
@@ -611,21 +763,151 @@ export default function App() {
 						config: hardcodedState.config,
 					},
 				} );
-
-				// Redirect to the new database record
 				window.location.href = `${ window.wpctSettings.adminUrl }admin.php?page=wp-content-type-edit&id=${ response.id }`;
-			} catch ( error ) {
-				// eslint-disable-next-line no-console
-				console.error( 'Failed to save content type:', error );
+			} else {
+				await save();
 			}
-		} else {
-			await save();
-		}
-	};
 
-	const currentHasEdits = isHardcodedType
-		? hardcodedState?.hasEdits
-		: hasEdits;
+			// 5. Reset pending state and update baseline
+			setPendingNewTaxonomies( [] );
+
+			// Update baseline to match current state so hasEdits resets
+			const currentManagedSlugs = taxonomies
+				.filter( ( t ) => t.isManaged )
+				.map( ( t ) => t.key || t.name );
+			setBaselineManagedTaxonomySlugs( currentManagedSlugs );
+		} catch ( error ) {
+			// eslint-disable-next-line no-console
+			console.error( 'Failed to save:', error );
+		}
+	}, [
+		pendingNewTaxonomies,
+		managedTaxonomyChanges,
+		availableTaxonomies,
+		currentPostTypeSlug,
+		isHardcodedType,
+		hardcodedState,
+		save,
+		taxonomies,
+	] );
+
+	// Handle creating a new taxonomy (queued for save)
+	const handleCreateTaxonomy = useCallback(
+		( taxonomyData ) => {
+			// Queue taxonomy for creation on save
+			setPendingNewTaxonomies( ( prev ) => [ ...prev, taxonomyData ] );
+
+			// Add to local taxonomies state for display
+			const newTaxonomy = {
+				_id: '__taxonomy_' + taxonomyData.slug,
+				key: taxonomyData.slug,
+				name: taxonomyData.slug,
+				label: taxonomyData.name,
+				singularName: taxonomyData.name,
+				restBase: taxonomyData.slug,
+				hierarchical: taxonomyData.hierarchical,
+				isTaxonomy: true,
+				isManaged: true,
+				isPending: true, // Mark as pending creation
+			};
+			setTaxonomies( ( prev ) => [ ...prev, newTaxonomy ] );
+
+			// Add to available taxonomies so it shows up in lists
+			setAvailableTaxonomies( ( prev ) => [
+				...prev,
+				{
+					id: null, // No ID yet
+					name: taxonomyData.name,
+					slug: taxonomyData.slug,
+					hierarchical: taxonomyData.hierarchical,
+					postTypes: [ currentPostTypeSlug ],
+					config: {
+						hierarchical: taxonomyData.hierarchical,
+						description: taxonomyData.description,
+					},
+					isManaged: true,
+					isPending: true,
+				},
+			] );
+
+			setIsTaxonomyModalOpen( false );
+		},
+		[ currentPostTypeSlug ]
+	);
+
+	// Handle adding an existing taxonomy to this post type (queued for save)
+	const handleAddExistingTaxonomy = useCallback(
+		( taxonomySlug ) => {
+			// Find the taxonomy in availableTaxonomies
+			const taxonomy = availableTaxonomies.find(
+				( t ) => t.slug === taxonomySlug
+			);
+			if ( ! taxonomy ) {
+				return;
+			}
+
+			// For external taxonomies, update config.taxonomies (goes through entity system)
+			if ( ! taxonomy.isManaged ) {
+				const currentTaxonomiesConfig = config.taxonomies || [];
+				const updatedTaxonomiesConfig = [
+					...currentTaxonomiesConfig,
+					taxonomySlug,
+				];
+				updateConfig( 'taxonomies', updatedTaxonomiesConfig );
+			}
+			// For managed taxonomies, the change is tracked via managedTaxonomyChanges
+			// and applied on save
+
+			// Add to local taxonomies state for display
+			const newTaxonomy = {
+				_id: '__taxonomy_' + taxonomy.slug,
+				key: taxonomy.slug,
+				name: taxonomy.slug,
+				label: taxonomy.name,
+				singularName: taxonomy.name,
+				restBase: taxonomy.restBase || taxonomy.slug,
+				hierarchical: taxonomy.hierarchical,
+				isTaxonomy: true,
+				isManaged: taxonomy.isManaged,
+				isCore: taxonomy.isCore,
+				managedId: taxonomy.id,
+			};
+			setTaxonomies( ( prev ) => [ ...prev, newTaxonomy ] );
+
+			setIsTaxonomyModalOpen( false );
+		},
+		[ availableTaxonomies, config, updateConfig ]
+	);
+
+	// Handle removing a taxonomy from this post type (queued for save)
+	const handleRemoveTaxonomy = useCallback(
+		( taxonomy ) => {
+			// For external taxonomies, update config.taxonomies (goes through entity system)
+			if ( ! taxonomy.isManaged ) {
+				const currentTaxonomiesConfig = config.taxonomies || [];
+				const updatedTaxonomiesConfig = currentTaxonomiesConfig.filter(
+					( slug ) => slug !== taxonomy.key
+				);
+				updateConfig( 'taxonomies', updatedTaxonomiesConfig );
+			}
+			// For managed taxonomies, the change is tracked via managedTaxonomyChanges
+			// and applied on save
+
+			// Remove from local taxonomies state
+			setTaxonomies( ( prev ) =>
+				prev.filter( ( t ) => t.key !== taxonomy.key )
+			);
+
+			// If it was a pending new taxonomy, also remove from pending
+			setPendingNewTaxonomies( ( prev ) =>
+				prev.filter( ( t ) => t.slug !== taxonomy.key )
+			);
+		},
+		[ config, updateConfig ]
+	);
+
+	const baseHasEdits = isHardcodedType ? hardcodedState?.hasEdits : hasEdits;
+	const currentHasEdits = baseHasEdits || hasManagedTaxonomyChanges;
 	const isReadOnly = source !== 'database';
 
 	useEffect( () => {
@@ -679,6 +961,11 @@ export default function App() {
 						updateConfig={ updateConfig }
 						fieldsManager={ fieldsManager }
 						source={ source }
+						taxonomies={ taxonomies }
+						onOpenTaxonomyModal={ () =>
+							setIsTaxonomyModalOpen( true )
+						}
+						onRemoveTaxonomy={ handleRemoveTaxonomy }
 					/>
 					<EditorSidebar
 						contentTypeId={ contentTypeId }
@@ -696,6 +983,15 @@ export default function App() {
 					/>
 				</div>
 			</div>
+			{ isTaxonomyModalOpen && (
+				<TaxonomyModal
+					onClose={ () => setIsTaxonomyModalOpen( false ) }
+					onCreateTaxonomy={ handleCreateTaxonomy }
+					onAddExistingTaxonomy={ handleAddExistingTaxonomy }
+					availableTaxonomies={ availableTaxonomies }
+					currentTaxonomySlugs={ currentTaxonomySlugs }
+				/>
+			) }
 			<Popover.Slot />
 		</SlotFillProvider>
 	);

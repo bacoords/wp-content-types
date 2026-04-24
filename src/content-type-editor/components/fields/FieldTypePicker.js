@@ -5,12 +5,12 @@
  * Similar to WordPress block inserter pattern.
  */
 import { Dropdown, MenuGroup, MenuItem, Button } from '@wordpress/components';
-import { plus } from '@wordpress/icons';
+import { plus, category } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { getGroupedFieldTypes } from '../../fields/fieldEditorFields';
 import './field-type-picker.css';
 
-export default function FieldTypePicker( { onSelect } ) {
+export default function FieldTypePicker( { onSelect, onSelectTaxonomy } ) {
 	const groups = getGroupedFieldTypes();
 
 	return (
@@ -44,6 +44,22 @@ export default function FieldTypePicker( { onSelect } ) {
 							) ) }
 						</MenuGroup>
 					) ) }
+					{ onSelectTaxonomy && (
+						<MenuGroup
+							label={ __( 'Relationships', 'wp-content-types' ) }
+						>
+							<MenuItem
+								icon={ category }
+								iconPosition="left"
+								onClick={ () => {
+									onSelectTaxonomy();
+									onClose();
+								} }
+							>
+								{ __( 'Taxonomy', 'wp-content-types' ) }
+							</MenuItem>
+						</MenuGroup>
+					) }
 				</div>
 			) }
 		/>

@@ -202,16 +202,161 @@ class WPCT_Admin {
 			// Check if this is a numeric ID (database record) or slug (hardcoded type).
 			if ( is_numeric( $id ) ) {
 				$settings['contentTypeId'] = absint( $id );
+
+				// Get the content type to find its slug for taxonomies.
+				$content_type = WPCT_Content_Type::get( absint( $id ) );
+				if ( $content_type && ! empty( $content_type['slug'] ) ) {
+					$settings['taxonomies'] = self::get_taxonomies_for_post_type( $content_type['slug'] );
+				}
 			} else {
 				// Slug-based access for hardcoded types.
 				$content_type = WPCT_Registry::get( $id );
 				if ( $content_type ) {
 					$settings['contentTypeSlug'] = $id;
 					$settings['contentTypeData'] = $content_type;
+					$settings['taxonomies']      = self::get_taxonomies_for_post_type( $id );
 				}
 			}
+
+			// Pass all available taxonomies for "Add Existing" functionality.
+			$settings['availableTaxonomies'] = self::get_all_available_taxonomies();
 		}
 
 		wp_localize_script( "wpct-{$script_name}", 'wpctSettings', $settings );
+	}
+
+	/**
+	 * Get managed taxonomies indexed by slug for efficient lookup.
+	 *
+	 * Uses static caching to avoid duplicate database queries within a request.
+	 *
+	 * @return array Managed taxonomies keyed by slug.
+	 */
+	private static function get_managed_taxonomies_map() {
+		static $map = null;
+
+		if ( null === $map ) {
+			$map                = array();
+			$managed_taxonomies = WPCT_Taxonomy::get_all();
+			foreach ( $managed_taxonomies as $managed ) {
+				$map[ $managed['slug'] ] = $managed;
+			}
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Get taxonomies registered for a post type.
+	 *
+	 * @param string $post_type Post type slug.
+	 * @return array Taxonomy data for JS.
+	 */
+	private static function get_taxonomies_for_post_type( $post_type ) {
+		$taxonomy_objects = get_object_taxonomies( $post_type, 'objects' );
+		$taxonomies       = array();
+
+		// Get managed taxonomies map for O(1) lookup.
+		$managed_map = self::get_managed_taxonomies_map();
+
+		foreach ( $taxonomy_objects as $taxonomy ) {
+			// Skip non-public taxonomies.
+			if ( ! $taxonomy->public ) {
+				continue;
+			}
+
+			// Skip taxonomies not shown in REST (required for JS access).
+			if ( ! $taxonomy->show_in_rest ) {
+				continue;
+			}
+
+			$is_managed = isset( $managed_map[ $taxonomy->name ] );
+			$is_core    = in_array( $taxonomy->name, self::$core_taxonomies, true );
+			$managed_id = $is_managed ? $managed_map[ $taxonomy->name ]['id'] : null;
+
+			$taxonomies[] = array(
+				'_id'          => '__taxonomy_' . $taxonomy->name,
+				'key'          => $taxonomy->name,
+				'name'         => $taxonomy->name,
+				'label'        => $taxonomy->label,
+				'singularName' => $taxonomy->labels->singular_name,
+				'restBase'     => $taxonomy->rest_base ? $taxonomy->rest_base : $taxonomy->name,
+				'hierarchical' => $taxonomy->hierarchical,
+				'isTaxonomy'   => true,
+				'isManaged'    => $is_managed,
+				'isCore'       => $is_core,
+				'managedId'    => $managed_id,
+			);
+		}
+
+		return $taxonomies;
+	}
+
+	/**
+	 * Core WordPress taxonomy slugs.
+	 *
+	 * @var array
+	 */
+	private static $core_taxonomies = array(
+		'category',
+		'post_tag',
+		'post_format',
+		'nav_menu',
+		'link_category',
+		'wp_theme',
+		'wp_template_part_area',
+		'wp_pattern_category',
+	);
+
+	/**
+	 * Get all available taxonomies (both managed and external).
+	 *
+	 * @return array All available taxonomies.
+	 */
+	private static function get_all_available_taxonomies() {
+		$result = array();
+
+		// Get managed taxonomies map for O(1) lookup.
+		$managed_map = self::get_managed_taxonomies_map();
+
+		// Get all public taxonomies.
+		$all_taxonomies = get_taxonomies( array( 'public' => true ), 'objects' );
+
+		foreach ( $all_taxonomies as $taxonomy ) {
+			// Skip taxonomies not shown in REST.
+			if ( ! $taxonomy->show_in_rest ) {
+				continue;
+			}
+
+			$is_managed  = isset( $managed_map[ $taxonomy->name ] );
+			$is_core     = in_array( $taxonomy->name, self::$core_taxonomies, true );
+			$managed_id  = null;
+			$post_types  = array();
+			$config_data = array();
+
+			if ( $is_managed ) {
+				$managed     = $managed_map[ $taxonomy->name ];
+				$managed_id  = $managed['id'];
+				$config_data = $managed['config'] ?? array();
+				$post_types  = $config_data['post_types'] ?? array();
+			} else {
+				// For external taxonomies, get the object types it's registered for.
+				$post_types = $taxonomy->object_type;
+			}
+
+			$result[] = array(
+				'id'           => $managed_id,
+				'name'         => $taxonomy->label,
+				'slug'         => $taxonomy->name,
+				'hierarchical' => $taxonomy->hierarchical,
+				'postTypes'    => $post_types,
+				'config'       => $config_data,
+				'isManaged'    => $is_managed,
+				'isCore'       => $is_core,
+				'restBase'     => $taxonomy->rest_base ? $taxonomy->rest_base : $taxonomy->name,
+			);
+		}
+
+		return $result;
 	}
 }

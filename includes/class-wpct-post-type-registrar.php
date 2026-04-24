@@ -139,6 +139,7 @@ class WPCT_Post_Type_Registrar {
 				add_post_type_support( $slug, 'custom-fields' );
 			}
 			self::register_fields_meta( $slug, $content_type );
+			self::register_taxonomies_for_post_type( $slug, $content_type );
 			return true;
 		}
 
@@ -154,9 +155,29 @@ class WPCT_Post_Type_Registrar {
 		// Register post meta for all fields.
 		if ( ! is_wp_error( $result ) ) {
 			self::register_fields_meta( $slug, $content_type );
+			self::register_taxonomies_for_post_type( $slug, $content_type );
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Register external taxonomies for a post type.
+	 *
+	 * Attaches taxonomies listed in the content type config to the post type.
+	 *
+	 * @param string $post_type    Post type slug.
+	 * @param array  $content_type Content type data.
+	 */
+	private static function register_taxonomies_for_post_type( $post_type, $content_type ) {
+		$config     = $content_type['config'] ?? array();
+		$taxonomies = $config['taxonomies'] ?? array();
+
+		foreach ( $taxonomies as $taxonomy_slug ) {
+			if ( taxonomy_exists( $taxonomy_slug ) ) {
+				register_taxonomy_for_object_type( $taxonomy_slug, $post_type );
+			}
+		}
 	}
 
 	/**
