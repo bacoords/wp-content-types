@@ -471,7 +471,7 @@ function EditorContent( {
 			: [
 					{
 						name: 'advanced',
-						title: __( 'Advanced', 'wp-content-types' ),
+						title: __( 'Settings', 'wp-content-types' ),
 					},
 			  ] ),
 		{ name: 'json', title: __( 'JSON', 'wp-content-types' ) },
