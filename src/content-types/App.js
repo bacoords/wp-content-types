@@ -53,7 +53,27 @@ function getSourceLabel( source, slug ) {
 	}
 }
 
+/**
+ * Get group label for grouping content types.
+ * Groups into "Core" (hardcoded/merged) vs "Custom" (database).
+ *
+ * @param {string} source - The source type of the content type.
+ * @return {string} The group label.
+ */
+function getSourceGroup( source ) {
+	return source === 'database'
+		? __( 'Custom', 'wp-content-types' )
+		: __( 'Core', 'wp-content-types' );
+}
+
 const fields = [
+	{
+		id: 'sourceGroup',
+		label: __( 'Category', 'wp-content-types' ),
+		getValue: ( { item } ) => getSourceGroup( item.source ),
+		enableHiding: false,
+		enableSorting: false,
+	},
 	{
 		id: 'name',
 		label: __( 'Name', 'wp-content-types' ),
@@ -263,6 +283,11 @@ export default function App() {
 		titleField: 'name',
 		fields: [ 'slug', 'source', 'visibility' ],
 		layout: { density: 'compact' },
+		groupBy: {
+			field: 'sourceGroup',
+			direction: 'desc', // Custom first, then Core
+			showLabel: false,
+		},
 	} );
 
 	const [ isAddModalOpen, setIsAddModalOpen ] = useState( false );

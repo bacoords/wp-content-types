@@ -4,6 +4,11 @@
  * Content Types List Styles
  */
 
+/* DataViews group header rows */
+.dataviews-view-table tr.dataviews-view-table__group-header-row {
+	background-color: #f6f7f7;
+}
+
 /* Hide WordPress admin footer in fullscreen mode */
 body.is-fullscreen-mode #wpfooter {
 	display: none;

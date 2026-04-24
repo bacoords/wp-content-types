@@ -28,6 +28,11 @@ export default function FieldsDataView( {
 		titleField: 'label',
 		fields: [ 'key', 'type', 'status' ],
 		layout: { density: 'compact' },
+		groupBy: {
+			field: 'category',
+			direction: 'asc', // Built-in first, then Custom
+			showLabel: false,
+		},
 	} );
 
 	// Modal state
@@ -111,24 +116,27 @@ export default function FieldsDataView( {
 	const dataViewFields = useMemo(
 		() => [
 			{
+				id: 'category',
+				label: __( 'Category', 'wp-content-types' ),
+				getValue: ( { item } ) =>
+					item.isBuiltIn
+						? __( 'Built-in', 'wp-content-types' )
+						: __( 'Custom', 'wp-content-types' ),
+				enableHiding: false,
+				enableSorting: false,
+			},
+			{
 				id: 'label',
 				label: __( 'Label', 'wp-content-types' ),
 				getValue: ( { item } ) => item.label || '',
 				render: ( { item } ) => (
-					<div className="wpct-field-label-cell">
-						<button
-							type="button"
-							className="wpct-field-label-link"
-							onClick={ () => handleEdit( item ) }
-						>
-							{ item.label }
-						</button>
-						{ item.isBuiltIn && (
-							<Badge intent="default">
-								{ __( 'Built-in', 'wp-content-types' ) }
-							</Badge>
-						) }
-					</div>
+					<button
+						type="button"
+						className="wpct-field-label-link"
+						onClick={ () => handleEdit( item ) }
+					>
+						{ item.label }
+					</button>
 				),
 				enableGlobalSearch: true,
 			},
